@@ -4,7 +4,7 @@ import { MonthCalendar } from '../components/DatePicker'
 import { GameRow } from '../components/GameRow'
 import { Basketball, Calendar, ChevronLeft, ChevronRight, Filter, WifiSlash } from '../components/icons'
 import { Page } from '../components/Page'
-import { Empty, GlassButton, Menu, Section, Sheet, Spinner, type MenuItem } from '../components/ui'
+import { Disclaimer, Empty, GlassButton, Menu, Section, Sheet, Spinner, type MenuItem } from '../components/ui'
 import { conferences } from '../lib/directory'
 import { ALL_DIVISION_I, margin, NCAA_TOURNAMENT, scoreboard, type Game } from '../lib/espn'
 import { fromYMD, todayYMD, ymd } from '../lib/format'
@@ -151,6 +151,7 @@ export function ScoresPage() {
               {rows(rest)}
             </Section>
           )}
+          <Disclaimer aboveFab />
         </>
       )}
 

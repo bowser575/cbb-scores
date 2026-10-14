@@ -177,6 +177,16 @@ export function Rank({ rank }: { rank: number | null }) {
   return rank ? <span className="rank">{rank}</span> : null
 }
 
+/** Shown under the screens with team logos and betting lines. */
+export function Disclaimer({ aboveFab }: { aboveFab?: boolean }) {
+  return (
+    <p className={`disclaimer ${aboveFab ? 'above-fab' : ''}`}>
+      Not affiliated with the NCAA, ESPN, or any school or sportsbook. Team names and logos are trademarks of their
+      owners. Data and odds from ESPN; odds are for information only.
+    </p>
+  )
+}
+
 /* ---------- pull-down menu ---------- */
 
 export type MenuItem<T> = { value: T; label: string } | 'divider'

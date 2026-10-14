@@ -681,6 +681,18 @@ a.glass:active { transform: scale(0.92); }
 
 .text-button:active { opacity: 0.5; }
 
+.disclaimer {
+  margin: 4px 0 24px;
+  padding: 0 4px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--label-2);
+  text-align: center;
+}
+
+/* Scrolled to the end, the note sits clear of the floating filter button. */
+.disclaimer.above-fab { margin-bottom: 76px; }
+
 .prominent-button {
   display: block;
   width: 100%;

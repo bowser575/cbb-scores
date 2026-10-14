@@ -2,7 +2,7 @@ import { useState, type CSSProperties, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Arena, Basketball, Calendar, Clock, People, TV, WifiSlash } from '../components/icons'
 import { BackButton, Page } from '../components/Page'
-import { Empty, Segmented, Spinner, TeamLogo, UpsetBadge } from '../components/ui'
+import { Disclaimer, Empty, Segmented, Spinner, TeamLogo, UpsetBadge } from '../components/ui'
 import {
   betResult,
   BOX_COLUMNS,
@@ -66,6 +66,7 @@ export function GamePage() {
           ) : null}
           <OddsCard g={g} />
           <GameInfo s={data} />
+          <Disclaimer />
         </>
       ) : error ? (
         <Empty icon={<WifiSlash />} title="Couldn't Load Game" message="Check your connection and try again." action={{ label: 'Retry', onClick: reload }} />

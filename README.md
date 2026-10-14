@@ -14,6 +14,10 @@ Data comes straight from ESPN's public site API in the browser; there's no backe
 
 Phones get a bottom tab bar; wide screens get a sidebar. Light and dark mode follow the system.
 
+## Disclaimer
+
+Not affiliated with the NCAA, ESPN, or any school or sportsbook. Team names and logos are trademarks of their owners. Data, logos and odds come from ESPN's public site API; odds are shown for information only.
+
 ## Develop
 
 ```bash
