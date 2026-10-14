@@ -2,6 +2,7 @@ import { useState, type CSSProperties, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Arena, ArrowsUpDown, Basketball, Calendar, ChartLine, Clock, People, TV, WifiSlash } from '../components/icons'
 import { BackButton, Page } from '../components/Page'
+import { tabInfo } from '../components/tabs'
 import { Empty, Segmented, Spinner, TeamLogo, UpsetBadge } from '../components/ui'
 import { BOX_COLUMNS, isUpset, projection, statusText, summary, type BoxTeam, type Game, type GameSummary, type Play, type TeamSide } from '../lib/espn'
 import { useResource } from '../lib/hooks'
@@ -9,7 +10,9 @@ import { useResource } from '../lib/hooks'
 type Tab = 'box' | 'team' | 'plays'
 
 export function GamePage() {
-  const { id = '', tab: navTab = 'scores' } = useParams()
+  const { id = '', tab: tabParam } = useParams()
+  // Links are built from this, so only known tabs: "%2Fevil.com" would make them "//evil.com/…".
+  const navTab = tabInfo(tabParam).id
   const { data, error, reload } = useResource(`game|${id}`, () => summary(id), (s) => (s.game.state === 'live' ? 20_000 : null))
   const [tab, setTab] = useState<Tab>('box')
   const [showProjection, setShowProjection] = useState(false)

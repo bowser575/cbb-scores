@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Calendar, ChevronRight, ChevronUpDown, People, Star, WifiSlash } from '../components/icons'
 import { BackButton, Page } from '../components/Page'
+import { tabInfo } from '../components/tabs'
 import { Empty, GlassButton, Menu, Rank, Section, Segmented, Spinner, TeamLogo } from '../components/ui'
 import { splitName, teamsById } from '../lib/directory'
 import { roster, schedule, statusText, type Game, type Roster, type TeamSchedule } from '../lib/espn'
@@ -11,7 +12,9 @@ import { useFavorites, useResource } from '../lib/hooks'
 type Tab = 'schedule' | 'roster'
 
 export function TeamPage() {
-  const { id = '', tab: navTab = 'teams' } = useParams()
+  const { id = '', tab: tabParam } = useParams()
+  // Links are built from this, so only known tabs: "%2Fevil.com" would make them "//evil.com/…".
+  const navTab = tabInfo(tabParam).id
   const info = teamsById.get(id)
   const favorites = useFavorites()
   const [tab, setTab] = useState<Tab>('schedule')
