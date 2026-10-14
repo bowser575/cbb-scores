@@ -53,6 +53,10 @@ export function useResource<T>(
       } catch {
         if (cancelled) return
         setState((s) => (s.key === key ? { ...s, error: s.data === undefined } : s))
+        // A failed refresh keeps the last data on screen; keep polling so live scores don't freeze.
+        const last = cache.get(key)
+        const next = last && refreshRef.current?.(last.data as T)
+        if (next) timer = window.setTimeout(run, next)
       }
     }
 
