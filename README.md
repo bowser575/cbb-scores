@@ -7,7 +7,8 @@ Data comes straight from ESPN's public site API in the browser; there's no backe
 ## Features
 
 - **Scores** — any game day of the season via the date strip or calendar; filter by All / Top 25 / Close; any conference or the NCAA Tournament. Live games refresh every 20 seconds.
-- **Game** — line score, venue/TV/line, box score per team, team stat comparison, play-by-play (all or scoring only). Projected scores from the betting line before tip-off; upsets are flagged.
+- **Game** — line score, venue/TV, box score per team, team stat comparison, play-by-play (all or scoring only). Projected scores from the betting line before tip-off; upsets are flagged.
+- **Odds** — ESPN's sportsbook line on every game that has one: the spread on each score row (with who covered once it's final), and on the game page the spread, total and moneyline with their prices, where the line opened, and the winning side of each bet once the game ends.
 - **Rankings** — AP and Coaches polls with movement and others receiving votes.
 - **Teams** — searchable list of every D-I team; schedule and roster for any season back to 2002–03. Star a team to pin its games to the top of Scores (saved in the browser).
 

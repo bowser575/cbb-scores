@@ -40,8 +40,26 @@ export interface Game {
   note: string
   tv: string
   timeValid: boolean
-  oddsDetails: string | null
-  overUnder: number | null
+  odds: Odds | null
+}
+
+/** The betting line from ESPN's sportsbook. Prices are American odds (-110, +270). */
+export interface Odds {
+  provider: string | null
+  /** Favorite and spread as ESPN writes it: "DUKE -7.5", or "EVEN". */
+  details: string | null
+  /** The home team's spread: negative when the home team is favored, 0 for a pick'em. */
+  spread: number | null
+  total: number | null
+  awaySpreadOdds: number | null
+  homeSpreadOdds: number | null
+  overOdds: number | null
+  underOdds: number | null
+  awayMoneyline: number | null
+  homeMoneyline: number | null
+  /** Where the line opened, when ESPN has it. */
+  openSpread: number | null
+  openTotal: number | null
 }
 
 export interface Scoreboard {
@@ -168,12 +186,85 @@ function parseTeam(c: J): TeamSide {
   }
 }
 
+/** A spread or total: 7.5, "+7.5", "o145.5", "PK", or a quote object holding one. */
+function line(v: J): number | null {
+  if (v != null && typeof v === 'object') return line(v.line ?? v.american ?? v.alternateDisplayValue)
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null
+  if (typeof v !== 'string') return null
+  const s = v.trim().replace(/^[ou]\s*/i, '')
+  if (/^(pk|pick|even)/i.test(s)) return 0
+  const n = Number(s)
+  return s && Number.isFinite(n) ? n : null
+}
+
+/** American odds: -110, "+270", "EVEN", or a quote object holding one. Anything inside ±100 isn't American odds. */
+function price(v: J): number | null {
+  if (v != null && typeof v === 'object') return price(v.american ?? v.alternateDisplayValue ?? v.odds)
+  const n = typeof v === 'number' ? v : typeof v === 'string' ? (/^even$/i.test(v.trim()) ? 100 : Number(v.trim())) : NaN
+  return Number.isFinite(n) && Math.abs(n) >= 100 ? n : null
+}
+
+const negate = (n: number | null) => (n == null ? null : -n)
+const positive = (n: number | null) => (n != null && n > 0 ? n : null)
+
+/** The home team's spread. `details` names the favorite; the sign of the bare `spread` isn't reliable, so it only gives the size. */
+function homeSpread(o: J, details: string | null, away: TeamSide, home: TeamSide): number | null {
+  if (details) {
+    if (/^(even|pk|pick)/i.test(details)) return 0
+    const m = /^(.+?)\s+([+-]?\d+(?:\.\d+)?)$/.exec(details)
+    if (m && (m[1] === home.abbr || m[1] === away.abbr)) {
+      const size = Math.abs(Number(m[2]))
+      return m[1] === home.abbr ? -size : size
+    }
+  }
+  const quoted = line(o.pointSpread?.home?.close ?? o.pointSpread?.home?.current)
+  if (quoted != null) return quoted
+  const size = line(o.spread)
+  if (size == null) return null
+  if (size === 0) return 0
+  if (o.homeTeamOdds?.favorite === true) return -Math.abs(size)
+  if (o.awayTeamOdds?.favorite === true) return Math.abs(size)
+  return null
+}
+
+/**
+ * ESPN sends odds two ways: flat numbers (`pickcenter`, older scoreboards), and on newer scoreboards
+ * `moneyline` / `pointSpread` / `total` blocks quoting each side at open and close. Either is read.
+ */
+function parseOdds(o: J, away: TeamSide, home: TeamSide): Odds | null {
+  if (!o || typeof o !== 'object') return null
+  const a = o.awayTeamOdds ?? {}
+  const h = o.homeTeamOdds ?? {}
+  const ml = o.moneyline ?? {}
+  const ps = o.pointSpread ?? {}
+  const tot = o.total ?? {}
+  const latest = (q: J) => q?.close ?? q?.current
+  const details = typeof o.details === 'string' && o.details.trim() ? o.details.trim() : null
+
+  const odds: Odds = {
+    provider: o.provider?.displayName ?? o.provider?.name ?? null,
+    details,
+    spread: homeSpread(o, details, away, home),
+    total: positive(line(o.overUnder) ?? line(latest(tot.over))),
+    awaySpreadOdds: price(a.spreadOdds) ?? price(latest(ps.away)),
+    homeSpreadOdds: price(h.spreadOdds) ?? price(latest(ps.home)),
+    overOdds: price(o.overOdds) ?? price(latest(tot.over)),
+    underOdds: price(o.underOdds) ?? price(latest(tot.under)),
+    awayMoneyline: price(a.moneyLine) ?? price(latest(ml.away)),
+    homeMoneyline: price(h.moneyLine) ?? price(latest(ml.home)),
+    openSpread: line(ps.home?.open) ?? negate(line(ps.away?.open)) ?? line(h.open?.pointSpread) ?? negate(line(a.open?.pointSpread)),
+    openTotal: positive(line(tot.over?.open) ?? line(o.open?.total)),
+  }
+  const anything = odds.details ?? odds.spread ?? odds.total ?? odds.awayMoneyline ?? odds.homeMoneyline
+  return anything == null ? null : odds
+}
+
 function parseGame(ev: J): Game {
   const c = ev?.competitions?.[0] ?? {}
   const type = (c.status ?? ev?.status)?.type ?? {}
   const competitors: J[] = c.competitors ?? []
-  const away = competitors.find((x) => x.homeAway === 'away') ?? competitors[competitors.length - 1]
-  const home = competitors.find((x) => x.homeAway === 'home') ?? competitors[0]
+  const away = parseTeam(competitors.find((x) => x.homeAway === 'away') ?? competitors[competitors.length - 1])
+  const home = parseTeam(competitors.find((x) => x.homeAway === 'home') ?? competitors[0])
   const state: GameState = type.state === 'in' ? 'live' : type.state === 'post' ? 'final' : 'pre'
   const tv = (c.broadcasts ?? []).flatMap((b: J) => {
     const names = (b.names ?? []).filter((n: unknown) => typeof n === 'string')
@@ -185,14 +276,13 @@ function parseGame(ev: J): Game {
     state,
     detail: type.shortDetail ?? type.detail ?? '',
     isHalftime: type.name === 'STATUS_HALFTIME',
-    away: parseTeam(away),
-    home: parseTeam(home),
+    away,
+    home,
     neutral: c.neutralSite === true,
     note: c.notes?.[0]?.headline ?? '',
     tv: tv.join(', '),
     timeValid: c.timeValid !== false,
-    oddsDetails: c.odds?.[0]?.details ?? null,
-    overUnder: typeof c.odds?.[0]?.overUnder === 'number' ? c.odds[0].overUnder : null,
+    odds: parseOdds(c.odds?.[0], away, home),
   }
 }
 
@@ -214,10 +304,8 @@ export async function scoreboard(date: string | null, group: string): Promise<Sc
 export async function summary(gameId: string): Promise<GameSummary> {
   const s = await get(`/summary?event=${gameId}`)
   const game = parseGame({ id: gameId, competitions: [s.header?.competitions?.[0] ?? {}] })
-  if (game.oddsDetails == null) {
-    game.oddsDetails = s.pickcenter?.[0]?.details ?? null
-    game.overUnder = typeof s.pickcenter?.[0]?.overUnder === 'number' ? s.pickcenter[0].overUnder : null
-  }
+  // Pick Center has the sportsbook's full line, prices included; the header's odds are the fallback.
+  game.odds = parseOdds(s.pickcenter?.[0], game.away, game.home) ?? game.odds
 
   const boxes: Record<string, BoxTeam> = {}
   for (const p of s.boxscore?.players ?? []) {
@@ -349,21 +437,62 @@ const timeFormatter = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minu
 
 /** Predicted score from the betting line: favorite = (O/U + spread) / 2, underdog = (O/U − spread) / 2. */
 export function projection(g: Game): { away: number; home: number } | null {
-  const ou = g.overUnder
-  const details = g.oddsDetails
-  if (!ou || ou <= 0 || !details) return null
-  if (details.toUpperCase() === 'EVEN') {
-    const half = Math.round(ou / 2)
-    return { away: half, home: half }
+  const total = g.odds?.total
+  const spread = g.odds?.spread
+  if (!total || spread == null) return null
+  return { away: Math.round((total + spread) / 2), home: Math.round((total - spread) / 2) }
+}
+
+/* ---------- betting ---------- */
+
+/** A true minus sign, so it lines up with the plus in tabular figures. */
+const signed = (n: number) => (n > 0 ? `+${n}` : `−${Math.abs(n)}`)
+
+/** American odds: −110, +270. */
+export const formatPrice = signed
+
+/** A spread from one team's side: +7.5, −7.5, or PK. */
+export const formatSpread = (n: number) => (n === 0 ? 'PK' : signed(n))
+
+/** The favorite and its spread, "DUKE -7.5", from a home-team spread. */
+export function favoriteLine(g: Game, homeSpread: number): string {
+  if (homeSpread === 0) return 'PK'
+  return `${(homeSpread < 0 ? g.home : g.away).abbr} -${Math.abs(homeSpread)}`
+}
+
+/** The line as ESPN writes it, or built from the spread when ESPN didn't. */
+export function lineLabel(g: Game): string | null {
+  const o = g.odds
+  return o?.details ?? (o?.spread != null ? favoriteLine(g, o.spread) : null)
+}
+
+export interface BetResult {
+  /** Which side covered the spread. */
+  cover: 'away' | 'home' | 'push' | null
+  /** Points the covering side beat the spread by. */
+  coverBy: number
+  total: 'over' | 'under' | 'push' | null
+  /** Points the game went over or under by. */
+  totalBy: number
+  points: number
+}
+
+/** How the spread and total settled. Final games only. */
+export function betResult(g: Game): BetResult | null {
+  if (g.state !== 'final' || !g.odds) return null
+  const a = Number.parseInt(g.away.score)
+  const h = Number.parseInt(g.home.score)
+  if (!Number.isFinite(a) || !Number.isFinite(h)) return null
+  const { spread, total } = g.odds
+  const ats = spread == null ? null : h - a + spread
+  const ou = total == null ? null : a + h - total
+  return {
+    cover: ats == null ? null : ats === 0 ? 'push' : ats > 0 ? 'home' : 'away',
+    coverBy: Math.abs(ats ?? 0),
+    total: ou == null ? null : ou === 0 ? 'push' : ou > 0 ? 'over' : 'under',
+    totalBy: Math.abs(ou ?? 0),
+    points: a + h,
   }
-  const [abbr, value] = details.split(' ')
-  const spread = Math.abs(Number(value))
-  if (!abbr || !Number.isFinite(spread)) return null
-  const favorite = Math.round((ou + spread) / 2)
-  const underdog = Math.round((ou - spread) / 2)
-  if (abbr === g.home.abbr) return { away: underdog, home: favorite }
-  if (abbr === g.away.abbr) return { away: favorite, home: underdog }
-  return null
 }
 
 /** A ranked team trailing or beaten by a team ranked 3+ spots worse, or unranked. */

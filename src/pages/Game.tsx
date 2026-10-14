@@ -1,9 +1,25 @@
 import { useState, type CSSProperties, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Arena, ArrowsUpDown, Basketball, Calendar, ChartLine, Clock, People, TV, WifiSlash } from '../components/icons'
+import { Arena, Basketball, Calendar, Clock, People, TV, WifiSlash } from '../components/icons'
 import { BackButton, Page } from '../components/Page'
 import { Empty, Segmented, Spinner, TeamLogo, UpsetBadge } from '../components/ui'
-import { BOX_COLUMNS, isUpset, projection, statusText, summary, type BoxTeam, type Game, type GameSummary, type Play, type TeamSide } from '../lib/espn'
+import {
+  betResult,
+  BOX_COLUMNS,
+  favoriteLine,
+  formatPrice,
+  formatSpread,
+  isUpset,
+  lineLabel,
+  projection,
+  statusText,
+  summary,
+  type BoxTeam,
+  type Game,
+  type GameSummary,
+  type Play,
+  type TeamSide,
+} from '../lib/espn'
 import { useResource } from '../lib/hooks'
 
 type Tab = 'box' | 'team' | 'plays'
@@ -48,6 +64,7 @@ export function GamePage() {
               {tab === 'plays' && <Plays s={data} />}
             </>
           ) : null}
+          <OddsCard g={g} />
           <GameInfo s={data} />
         </>
       ) : error ? (
@@ -126,14 +143,112 @@ function Header({
   )
 }
 
+/* ---------- odds ---------- */
+
+/** Spread, total and moneyline for each team, laid out like a sportsbook. Once the game is final, the bets that won are lit. */
+function OddsCard({ g }: { g: Game }) {
+  const o = g.odds
+  if (!o) return null
+  const result = betResult(g)
+  const { spread, total } = o
+  const hasMoney = o.awayMoneyline != null || o.homeMoneyline != null
+
+  const notes: string[] = []
+  if (result?.cover) notes.push(result.cover === 'push' ? 'Spread pushed' : `${g[result.cover].abbr} covered by ${result.coverBy}`)
+  if (result?.total) {
+    notes.push(
+      result.total === 'push'
+        ? `Total pushed at ${result.points}`
+        : `${result.total === 'over' ? 'Over' : 'Under'} by ${result.totalBy} · ${result.points} points`,
+    )
+  }
+  const opened = [
+    o.openSpread != null && o.openSpread !== spread ? favoriteLine(g, o.openSpread) : null,
+    o.openTotal != null && o.openTotal !== total ? `O/U ${o.openTotal}` : null,
+  ].filter(Boolean)
+  if (opened.length) notes.push(`Opened ${opened.join(' · ')}`)
+
+  return (
+    <section className="card odds">
+      <div className="odds-head">
+        <span>Odds</span>
+        {o.provider && <span className="odds-provider">{o.provider}</span>}
+      </div>
+      {spread != null || total != null || hasMoney ? (
+        <table className="odds-table">
+          <thead>
+            <tr>
+              <td />
+              {spread != null && <th scope="col">Spread</th>}
+              {total != null && <th scope="col">Total</th>}
+              {hasMoney && <th scope="col">Money</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {(['away', 'home'] as const).map((side) => {
+              const t = g[side]
+              const home = side === 'home'
+              const ml = home ? o.homeMoneyline : o.awayMoneyline
+              return (
+                <tr key={side}>
+                  <th scope="row">
+                    <span className="odds-team">
+                      <TeamLogo id={t.id} size={24} />
+                      <span className="odds-abbr">{t.abbr}</span>
+                    </span>
+                  </th>
+                  {spread != null && (
+                    <OddsCell
+                      main={formatSpread(home ? spread : -spread)}
+                      price={home ? o.homeSpreadOdds : o.awaySpreadOdds}
+                      hit={result?.cover === side}
+                    />
+                  )}
+                  {total != null && (
+                    <OddsCell
+                      main={`${home ? 'U' : 'O'} ${total}`}
+                      price={home ? o.underOdds : o.overOdds}
+                      hit={result?.total === (home ? 'under' : 'over')}
+                    />
+                  )}
+                  {hasMoney && <OddsCell main={ml != null ? formatPrice(ml) : '–'} hit={result != null && t.winner} />}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      ) : (
+        <p className="odds-line">{lineLabel(g)}</p>
+      )}
+      {notes.length > 0 && (
+        <div className="odds-notes">
+          {notes.map((n) => (
+            <span key={n}>{n}</span>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function OddsCell({ main, price, hit }: { main: string; price?: number | null; hit: boolean }) {
+  return (
+    <td>
+      <span className={`odds-cell ${hit ? 'hit' : ''}`}>
+        <span className="odds-main">{main}</span>
+        {price != null && <span className="odds-price">{formatPrice(price)}</span>}
+        {hit && <span className="sr-only">, won</span>}
+      </span>
+    </td>
+  )
+}
+
 const infoDateFmt = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 
-/** Line, total, date, time, venue — icon rows like the iOS app's game info card. */
+/** Date, time, TV, venue — icon rows like the iOS app's game info card. */
 function GameInfo({ s }: { s: GameSummary }) {
   const g = s.game
   const cells: { icon: ReactNode; text: string; wide?: boolean }[] = []
-  if (g.oddsDetails) cells.push({ icon: <ChartLine />, text: g.oddsDetails })
-  if (g.overUnder != null) cells.push({ icon: <ArrowsUpDown />, text: `O/U ${g.overUnder}` })
   if (g.date) cells.push({ icon: <Calendar />, text: infoDateFmt.format(g.date) })
   if (g.date && g.timeValid) cells.push({ icon: <Clock />, text: timeFmt.format(g.date) })
   if (g.tv) cells.push({ icon: <TV />, text: g.tv, wide: true })

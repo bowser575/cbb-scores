@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom'
-import { isUpset, statusText, type Game, type TeamSide } from '../lib/espn'
+import { betResult, isUpset, lineLabel, statusText, type Game, type TeamSide } from '../lib/espn'
 import { ChevronRight, TV } from './icons'
 import { TeamLogo, UpsetBadge } from './ui'
 
 export function GameRow({ game, to, back }: { game: Game; to: string; back: string }) {
   const upset = isUpset(game)
+  const line = lineLabel(game)
+  const cover = betResult(game)?.cover
 
   const side = (t: TeamSide) => {
     const lost = game.state === 'final' && !t.winner
@@ -27,7 +29,8 @@ export function GameRow({ game, to, back }: { game: Game; to: string; back: stri
       </div>
       <div className={`gr-status ${game.state}`}>
         <span className="gr-state">{statusText(game)}</span>
-        {game.state === 'pre' && game.oddsDetails && <span className="gr-line">{game.oddsDetails}</span>}
+        {line && <span className="gr-line">{line}</span>}
+        {cover && <span className="gr-cover">{cover === 'push' ? 'Push' : `${game[cover].abbr} covered`}</span>}
         {game.state !== 'final' && game.tv && (
           <span className="gr-tv">
             <TV />

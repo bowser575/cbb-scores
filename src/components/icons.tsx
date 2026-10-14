@@ -79,19 +79,6 @@ export const TV = (p: P) => (
   </svg>
 )
 
-export const ChartLine = (p: P) => (
-  <svg {...base(p)}>
-    <path d="M3.5 19.5h17" />
-    <path d="M5 15.5l4.5-5 3.5 3 6-7" />
-  </svg>
-)
-
-export const ArrowsUpDown = (p: P) => (
-  <svg {...base(p)}>
-    <path d="M8 19V5M4.5 8.5 8 5l3.5 3.5M16 5v14M12.5 15.5 16 19l3.5-3.5" />
-  </svg>
-)
-
 export const Clock = (p: P) => (
   <svg {...base(p)}>
     <circle cx="12" cy="12" r="8.5" />
