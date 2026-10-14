@@ -22,10 +22,22 @@ export const Basketball = (p: P) => (
   </svg>
 )
 
-export const Trophy = ({ filled, ...p }: P & { filled?: boolean }) => (
+/** calendar.day — a filled tile showing today's date, used for the Scores tab. */
+export const CalendarDay = ({ day, ...p }: P & { day: number }) => (
+  <svg {...base({ stroke: 'none', ...p })}>
+    <rect x="3" y="3" width="18" height="18" rx="4" fill="currentColor" />
+    <text x="12" y="16.6" textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--tab-glyph, #fff)" fontFamily="inherit">
+      {day}
+    </text>
+  </svg>
+)
+
+export const ListNumber = (p: P) => (
   <svg {...base(p)}>
-    <path d="M7 4h10v5.5a5 5 0 0 1-10 0V4Z" fill={filled ? 'currentColor' : 'none'} />
-    <path d="M7 6H4.5v1.2A3.3 3.3 0 0 0 7.6 10.5M17 6h2.5v1.2a3.3 3.3 0 0 1-3.1 3.3M12 14.5V18M8.5 20.5h7M9.5 18h5" />
+    <path d="M10 6h11M10 12h11M10 18h11" />
+    <path d="M3.6 4.6 5 3.8v4.4" strokeWidth="1.4" />
+    <path d="M3.4 10.6c.2-.5.7-.8 1.3-.8.7 0 1.2.4 1.2 1 0 .9-1.5 1.5-2.5 2.6h2.6" strokeWidth="1.4" />
+    <path d="M3.5 16.2c.3-.3.7-.5 1.2-.5.7 0 1.2.4 1.2 1s-.5.9-1.1.9c.7 0 1.2.4 1.2 1s-.6 1.1-1.3 1.1c-.5 0-1-.2-1.3-.6" strokeWidth="1.4" />
   </svg>
 )
 
@@ -40,8 +52,9 @@ export const Star = ({ filled, ...p }: P & { filled?: boolean }) => (
 
 export const Calendar = (p: P) => (
   <svg {...base(p)}>
-    <rect x="3.5" y="5" width="17" height="15.5" rx="3" />
-    <path d="M3.5 9.5h17M8 3v4M16 3v4" />
+    <rect x="3.5" y="4.5" width="17" height="16" rx="3.5" />
+    <path d="M3.5 9h17" />
+    <path d="M8 12.5h.01M12 12.5h.01M16 12.5h.01M8 16h.01M12 16h.01M16 16h.01" strokeWidth="2.2" />
   </svg>
 )
 
@@ -52,6 +65,55 @@ export const Search = (p: P) => (
   </svg>
 )
 
+/** line.3.horizontal.decrease */
+export const Filter = (p: P) => (
+  <svg {...base({ strokeWidth: 1.9, ...p })}>
+    <path d="M4 7h16M7 12h10M10 17h4" />
+  </svg>
+)
+
+export const TV = (p: P) => (
+  <svg {...base({ strokeWidth: 1.6, ...p })}>
+    <rect x="3" y="4.5" width="18" height="12.5" rx="2" />
+    <path d="M8.5 20h7" />
+  </svg>
+)
+
+export const ChartLine = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M3.5 19.5h17" />
+    <path d="M5 15.5l4.5-5 3.5 3 6-7" />
+  </svg>
+)
+
+export const ArrowsUpDown = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M8 19V5M4.5 8.5 8 5l3.5 3.5M16 5v14M12.5 15.5 16 19l3.5-3.5" />
+  </svg>
+)
+
+export const Clock = (p: P) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 7.5V12l3 2" />
+  </svg>
+)
+
+export const Arena = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M3.5 20.5h17M5 20.5V10M19 20.5V10M3.5 10 12 4.5l8.5 5.5" />
+    <path d="M9 20.5v-5h6v5" />
+  </svg>
+)
+
+export const People = (p: P) => (
+  <svg {...base(p)}>
+    <circle cx="9" cy="8.5" r="3.5" />
+    <path d="M2.5 19.5c.6-3.3 3.2-5.3 6.5-5.3s5.9 2 6.5 5.3" />
+    <path d="M15.5 5.3a3.3 3.3 0 0 1 0 6.4M17.5 14.6c2.1.6 3.5 2.4 4 4.9" />
+  </svg>
+)
+
 export const ChevronRight = (p: P) => (
   <svg {...base({ viewBox: '0 0 8 14', strokeWidth: 2, ...p })}>
     <path d="M1.5 1.5 6.5 7l-5 5.5" />
@@ -59,8 +121,8 @@ export const ChevronRight = (p: P) => (
 )
 
 export const ChevronLeft = (p: P) => (
-  <svg {...base({ viewBox: '0 0 12 21', strokeWidth: 2.5, ...p })}>
-    <path d="M10 2 2 10.5 10 19" />
+  <svg {...base({ viewBox: '0 0 8 14', strokeWidth: 2, ...p })}>
+    <path d="M6.5 1.5 1.5 7l5 5.5" />
   </svg>
 )
 
@@ -94,13 +156,5 @@ export const WifiSlash = (p: P) => (
     <path d="M2.5 9a14 14 0 0 1 5.2-3.1M11 5.1A14 14 0 0 1 21.5 9M5.5 12.4a9.5 9.5 0 0 1 4-2.2M14.6 10.4a9.5 9.5 0 0 1 3.9 2M8.7 15.6a5 5 0 0 1 6.6 0" />
     <circle cx="12" cy="19" r=".9" fill="currentColor" />
     <path d="M3.5 3.5 20.5 20.5" />
-  </svg>
-)
-
-export const People = (p: P) => (
-  <svg {...base(p)}>
-    <circle cx="9" cy="8.5" r="3.5" />
-    <path d="M2.5 19.5c.6-3.3 3.2-5.3 6.5-5.3s5.9 2 6.5 5.3" />
-    <path d="M15.5 5.3a3.3 3.3 0 0 1 0 6.4M17.5 14.6c2.1.6 3.5 2.4 4 4.9" />
   </svg>
 )

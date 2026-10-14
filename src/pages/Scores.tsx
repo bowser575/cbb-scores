@@ -1,43 +1,58 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { MonthCalendar } from '../components/DatePicker'
 import { GameRow } from '../components/GameRow'
-import { Basketball, Calendar, ChevronDown, ChevronLeft, ChevronRight, WifiSlash } from '../components/icons'
+import { Basketball, Calendar, ChevronLeft, ChevronRight, Filter, WifiSlash } from '../components/icons'
 import { Page } from '../components/Page'
-import { Empty, Menu, Section, Segmented, Sheet, Spinner, type MenuItem } from '../components/ui'
+import { Empty, GlassButton, Menu, Section, Sheet, Spinner, type MenuItem } from '../components/ui'
 import { conferences } from '../lib/directory'
 import { ALL_DIVISION_I, margin, NCAA_TOURNAMENT, scoreboard, type Game } from '../lib/espn'
-import { fromYMD, monthDay, todayYMD, weekday } from '../lib/format'
+import { fromYMD, todayYMD, ymd } from '../lib/format'
 import { useFavorites, useResource, useStored } from '../lib/hooks'
 
-type Filter = 'all' | 'top25' | 'close'
+/** One pick in the filter menu: Top 25, close games, or a group (all D-I, the tournament, a conference). */
+type View = 'top25' | 'close' | string
 
-const FILTERS: { value: Filter; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'top25', label: 'Top 25' },
-  { value: 'close', label: 'Close' },
-]
+const CONFERENCE_LABELS: Record<string, string> = {
+  'Am. East': 'America East',
+  CUSA: 'Conference USA',
+  Horizon: 'Horizon League',
+  Ivy: 'Ivy League',
+  Patriot: 'Patriot League',
+  Summit: 'Summit League',
+}
 
-const GROUPS: MenuItem<string>[] = [
-  { value: ALL_DIVISION_I, label: 'All Division I' },
-  { value: NCAA_TOURNAMENT, label: 'NCAA Tournament' },
+const conferenceItems = conferences
+  .map((c) => ({ value: c.id, label: CONFERENCE_LABELS[c.short] ?? c.short }))
+  .sort((a, b) => a.label.localeCompare(b.label))
+
+// Ordered so the common picks sit nearest the button, which opens the menu upward.
+const VIEWS: MenuItem<View>[] = [
+  ...conferenceItems,
   'divider',
-  ...conferences.map((c) => ({ value: c.id, label: c.short })),
+  { value: NCAA_TOURNAMENT, label: 'NCAA Tournament' },
+  { value: ALL_DIVISION_I, label: 'Division I' },
+  { value: 'close', label: 'Close Games' },
+  { value: 'top25', label: 'Top 25' },
 ]
+
+const viewLabel = (v: View) => VIEWS.find((i): i is { value: View; label: string } => i !== 'divider' && i.value === v)?.label ?? 'Scores'
 
 const STATE_ORDER = { live: 0, pre: 1, final: 2 }
 
-// The season's game days, kept across visits so the strip doesn't flash empty.
+const dayFmt = new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'short', day: 'numeric' })
+
+// The season's game days, kept across visits so stepping between days works immediately.
 let knownCalendar: string[] = []
 
 export function ScoresPage() {
   const [params, setParams] = useSearchParams()
   const requested = params.get('d')
-  const [group, setGroup] = useStored('group', ALL_DIVISION_I)
-  const [filter, setFilter] = useStored<Filter>('filter', 'all')
+  const [view, setView] = useStored<View>('view', ALL_DIVISION_I)
   const [picking, setPicking] = useState(false)
   const favorites = useFavorites()
 
+  const group = view === 'top25' || view === 'close' ? ALL_DIVISION_I : view
   const { data, error, reload } = useResource(
     `scores|${requested ?? '-'}|${group}`,
     () => scoreboard(requested, group),
@@ -46,52 +61,63 @@ export function ScoresPage() {
 
   if (data?.calendar.length) knownCalendar = data.calendar
   const selected = requested ?? data?.day ?? null
+  const setDay = (d: string | null) => setParams(d ? { d } : {}, { replace: true })
 
-  const days = useMemo(() => {
-    const all = new Set(knownCalendar)
-    if (selected) all.add(selected)
-    return [...all].sort()
-  }, [selected, data])
-
-  const setDay = useCallback((d: string) => setParams({ d }, { replace: true }), [setParams])
+  // Previous/next game day; plain calendar days when the season calendar isn't known.
+  const step = (dir: -1 | 1) => {
+    if (!selected) return
+    const days = [...new Set([...knownCalendar, selected])].sort()
+    const i = days.indexOf(selected) + dir
+    if (knownCalendar.length && i >= 0 && i < days.length) return setDay(days[i])
+    const d = fromYMD(selected)
+    if (d) setDay(ymd(new Date(d.getFullYear(), d.getMonth(), d.getDate() + dir)))
+  }
 
   const visible = useMemo(() => {
     const sorted = [...(data?.games ?? [])].sort(
       (a, b) => STATE_ORDER[a.state] - STATE_ORDER[b.state] || (a.date?.getTime() ?? 0) - (b.date?.getTime() ?? 0),
     )
-    if (filter === 'top25') return sorted.filter((g) => g.away.rank != null || g.home.rank != null)
-    if (filter === 'close') return sorted.filter((g) => g.state !== 'pre' && (margin(g) ?? 99) <= 5)
+    if (view === 'top25') return sorted.filter((g) => g.away.rank != null || g.home.rank != null)
+    if (view === 'close') return sorted.filter((g) => g.state !== 'pre' && (margin(g) ?? 99) <= 5)
     return sorted
-  }, [data, filter])
-
-  const groupName =
-    group === ALL_DIVISION_I ? 'All D-I' : group === NCAA_TOURNAMENT ? 'NCAA Tourney' : (conferences.find((c) => c.id === group)?.short ?? 'Conference')
+  }, [data, view])
 
   const mine = visible.filter((g) => favorites.has(g.away.id) || favorites.has(g.home.id))
   const rest = visible.filter((g) => !mine.includes(g))
-  const rows = (games: Game[]) => games.map((g) => <GameRow key={g.id} game={g} to={`/scores/game/${g.id}`} back="Scores" />)
+  const rows = (games: Game[]) => games.map((g) => <GameRow key={g.id} game={g} to={`/scores/game/${g.id}`} back={viewLabel(view)} />)
+
+  const date = selected ? fromYMD(selected) : null
+  const isToday = selected === todayYMD()
+  const subtitle = date ? `${isToday ? 'Today · ' : ''}${dayFmt.format(date)}` : ' '
 
   return (
     <Page
-      title="Scores"
+      title={viewLabel(view)}
+      subtitle={subtitle}
       large
       leading={
-        <button className="icon-button" onClick={() => setPicking(true)} aria-label="Go to date">
-          <Calendar />
-        </button>
+        requested && !isToday ? (
+          <button className="glass glass-pill" onClick={() => setDay(null)}>
+            Today
+          </button>
+        ) : null
       }
       trailing={
-        <Menu items={GROUPS} value={group} onChange={setGroup} label="Conference" className="nav-menu">
-          {groupName}
-          <ChevronDown className="menu-chevron" />
-        </Menu>
+        <>
+          <GlassButton label="Go to date" onClick={() => setPicking(true)}>
+            <Calendar />
+          </GlassButton>
+          <div className="glass glass-pill stepper" role="group" aria-label="Change day">
+            <button onClick={() => step(-1)} aria-label="Previous day">
+              <ChevronLeft />
+            </button>
+            <button onClick={() => step(1)} aria-label="Next day">
+              <ChevronRight />
+            </button>
+          </div>
+        </>
       }
     >
-      <DateStrip days={days} selected={selected} onSelect={setDay} />
-      <div className="controls">
-        <Segmented label="Filter" options={FILTERS} value={filter} onChange={setFilter} />
-      </div>
-
       {error ? (
         <Empty
           icon={<WifiSlash />}
@@ -106,19 +132,33 @@ export function ScoresPage() {
           icon={<Basketball />}
           title="No Games"
           message={
-            filter === 'top25'
+            view === 'top25'
               ? 'No Top 25 teams play on this day.'
-              : filter === 'close'
+              : view === 'close'
                 ? 'No close games (5 points or fewer) yet.'
                 : 'No games on this day.'
           }
         />
       ) : (
         <>
-          {mine.length > 0 && <Section header="My Teams">{rows(mine)}</Section>}
-          {rest.length > 0 && <Section header={mine.length ? 'All Games' : undefined}>{rows(rest)}</Section>}
+          {mine.length > 0 && (
+            <Section header="My Teams" plain>
+              {rows(mine)}
+            </Section>
+          )}
+          {rest.length > 0 && (
+            <Section header={mine.length ? 'All Games' : undefined} plain>
+              {rows(rest)}
+            </Section>
+          )}
         </>
       )}
+
+      <div className="fab">
+        <Menu items={VIEWS} value={view} onChange={setView} label="Filter games" className="glass glass-circle">
+          <Filter />
+        </Menu>
+      </div>
 
       <Sheet open={picking} onClose={() => setPicking(false)} label="Go to date">
         <DateSheet
@@ -140,11 +180,11 @@ function DateSheet({ initial, marked, onCancel, onGo }: { initial: string; marke
   return (
     <>
       <div className="sheet-bar">
-        <button className="text-button" onClick={onCancel}>
+        <button className="glass glass-pill" onClick={onCancel}>
           Cancel
         </button>
         <span className="sheet-title">Go to Date</span>
-        <button className="text-button strong" onClick={() => onGo(day)}>
+        <button className="glass glass-pill prominent" onClick={() => onGo(day)}>
           Go
         </button>
       </div>
@@ -155,55 +195,5 @@ function DateSheet({ initial, marked, onCancel, onGo }: { initial: string; marke
         </button>
       </div>
     </>
-  )
-}
-
-/** Horizontally scrolling list of game days, like a sports app's date bar. */
-function DateStrip({ days, selected, onSelect }: { days: string[]; selected: string | null; onSelect: (d: string) => void }) {
-  const scroller = useRef<HTMLDivElement>(null)
-  const first = useRef(true)
-  const today = todayYMD()
-
-  useLayoutEffect(() => {
-    const el = scroller.current
-    const pill = el?.querySelector<HTMLElement>('[aria-pressed="true"]')
-    if (!el || !pill) return
-    const left = pill.offsetLeft - (el.clientWidth - pill.offsetWidth) / 2
-    // Animate short hops only; jumping months away should be instant.
-    const near = Math.abs(left - el.scrollLeft) < el.clientWidth
-    el.scrollTo({ left, behavior: first.current || !near ? 'auto' : 'smooth' })
-    first.current = false
-  }, [selected, days])
-
-  // Mouse users get arrows; touch and trackpads just swipe.
-  const [edges, setEdges] = useState({ start: true, end: true })
-  const measure = useCallback(() => {
-    const el = scroller.current
-    if (el) setEdges({ start: el.scrollLeft <= 4, end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 4 })
-  }, [])
-  useEffect(measure, [measure, days])
-  const page = (dir: number) => scroller.current?.scrollBy({ left: dir * scroller.current.clientWidth * 0.8, behavior: 'smooth' })
-
-  if (days.length === 0) return <div className="strip-placeholder" />
-  return (
-    <div className="strip-wrap">
-      <button className="strip-arrow start" onClick={() => page(-1)} disabled={edges.start} aria-label="Earlier dates">
-        <ChevronLeft />
-      </button>
-      <div className="strip" ref={scroller} onScroll={measure}>
-        {days.map((d) => {
-          const date = fromYMD(d)
-          return (
-            <button key={d} className="strip-day" aria-pressed={d === selected} onClick={() => onSelect(d)}>
-              <span className="strip-weekday">{d === today ? 'Today' : weekday(date)}</span>
-              <span className="strip-date">{monthDay(date)}</span>
-            </button>
-          )
-        })}
-      </div>
-      <button className="strip-arrow end" onClick={() => page(1)} disabled={edges.end} aria-label="Later dates">
-        <ChevronRight />
-      </button>
-    </div>
   )
 }

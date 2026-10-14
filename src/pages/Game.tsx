@@ -1,10 +1,9 @@
-import { useState, type CSSProperties } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Basketball, WifiSlash } from '../components/icons'
+import { Arena, ArrowsUpDown, Basketball, Calendar, ChartLine, Clock, People, TV, WifiSlash } from '../components/icons'
 import { BackButton, Page } from '../components/Page'
-import { Empty, Rank, Segmented, Spinner, TeamLogo, UpsetBadge } from '../components/ui'
+import { Empty, Segmented, Spinner, TeamLogo, UpsetBadge } from '../components/ui'
 import { BOX_COLUMNS, isUpset, projection, statusText, summary, type BoxTeam, type Game, type GameSummary, type Play, type TeamSide } from '../lib/espn'
-import { monthDay } from '../lib/format'
 import { useResource } from '../lib/hooks'
 
 type Tab = 'box' | 'team' | 'plays'
@@ -13,18 +12,24 @@ export function GamePage() {
   const { id = '', tab: navTab = 'scores' } = useParams()
   const { data, error, reload } = useResource(`game|${id}`, () => summary(id), (s) => (s.game.state === 'live' ? 20_000 : null))
   const [tab, setTab] = useState<Tab>('box')
+  const [showProjection, setShowProjection] = useState(false)
 
   const g = data?.game
-  const title = g ? `${g.away.abbr} ${g.neutral ? 'vs' : 'at'} ${g.home.abbr}` : ''
+  const title = g ? `${g.away.name} ${g.neutral ? 'vs' : '@'} ${g.home.name}` : ''
+  const proj = g?.state === 'pre' ? projection(g) : null
+  const started = g && !(g.state === 'pre' && Object.keys(data.boxes).length === 0)
 
   return (
-    <Page title={title} leading={<BackButton />}>
+    <Page title={title} leading={<BackButton />} wide>
       {data && g ? (
         <>
-          <Header s={data} navTab={navTab} back={title} />
-          {g.state === 'pre' && Object.keys(data.boxes).length === 0 ? (
-            <Pregame game={g} />
-          ) : (
+          <Header s={data} navTab={navTab} back={title} projected={showProjection ? proj : null} />
+          {proj && (
+            <button className="prominent-button" onClick={() => setShowProjection((v) => !v)}>
+              {showProjection ? 'Hide Projected Score' : 'Show Projected Score'}
+            </button>
+          )}
+          {started ? (
             <>
               <div className="controls">
                 <Segmented
@@ -42,7 +47,8 @@ export function GamePage() {
               {tab === 'team' && <TeamStats s={data} />}
               {tab === 'plays' && <Plays s={data} />}
             </>
-          )}
+          ) : null}
+          <GameInfo s={data} />
         </>
       ) : error ? (
         <Empty icon={<WifiSlash />} title="Couldn't Load Game" message="Check your connection and try again." action={{ label: 'Retry', onClick: reload }} />
@@ -55,33 +61,36 @@ export function GamePage() {
 
 /* ---------- header ---------- */
 
-function Header({ s, navTab, back }: { s: GameSummary; navTab: string; back: string }) {
-  const g = s.game
-  const proj = g.state === 'pre' ? projection(g) : null
-  const upset = isUpset(g)
+const headerDayFmt = new Intl.DateTimeFormat(undefined, { weekday: 'long' })
 
-  const meta = [
-    g.note,
-    s.venue,
-    g.tv && `TV: ${g.tv}`,
-    g.oddsDetails && `Line: ${g.oddsDetails}${g.overUnder != null ? ` · O/U ${g.overUnder}` : ''}`,
-    s.attendance && `Attendance: ${s.attendance.toLocaleString()}`,
-  ].filter(Boolean)
+function Header({
+  s,
+  navTab,
+  back,
+  projected,
+}: {
+  s: GameSummary
+  navTab: string
+  back: string
+  projected: { away: number; home: number } | null
+}) {
+  const g = s.game
+  const upset = isUpset(g)
 
   const teamCol = (t: TeamSide) => (
     <Link to={`/${navTab}/team/${t.id}`} state={{ back }} className="gh-team">
-      <TeamLogo id={t.id} size={52} />
-      <span className="gh-name">
-        <Rank rank={t.rank} />
-        {t.name}
+      <TeamLogo id={t.id} size={56} />
+      <span className="gh-abbr">
+        {t.rank && <span className="rank-badge">{t.rank}</span>}
+        {t.abbr}
       </span>
       <span className="gh-record">{t.record}</span>
     </Link>
   )
 
-  const score = (t: TeamSide, projected?: number) =>
+  const score = (t: TeamSide, p?: number) =>
     g.state === 'pre' ? (
-      <span className="gh-score proj">{projected ?? ''}</span>
+      <span className={`gh-score proj ${p == null ? 'hidden' : ''}`}>{p ?? ''}</span>
     ) : (
       <span className={`gh-score ${g.state === 'final' && !t.winner ? 'lost' : ''}`}>{t.score}</span>
     )
@@ -90,29 +99,61 @@ function Header({ s, navTab, back }: { s: GameSummary; navTab: string; back: str
     <section className="card game-header">
       <div className="gh-top">
         {teamCol(g.away)}
-        {score(g.away, proj?.away)}
+        {score(g.away, projected?.away)}
         <div className={`gh-status ${g.state}`}>
-          {g.state === 'pre' && <span>{monthDay(g.date)}</span>}
-          <span className="gh-state">{statusText(g)}</span>
-          {proj && <span className="gh-proj-label">Projected</span>}
+          {g.state === 'pre' ? (
+            <>
+              <span>{g.date ? headerDayFmt.format(g.date) : ''}</span>
+              <span>{statusText(g)}</span>
+              {g.tv && (
+                <span className="gh-tv">
+                  <TV />
+                  {g.tv.split(', ')[0]}
+                </span>
+              )}
+              {projected && <span className="gh-proj-label">Projected</span>}
+            </>
+          ) : (
+            <span className="gh-state">{statusText(g)}</span>
+          )}
           {upset && <UpsetBadge live={g.state === 'live'} />}
         </div>
-        {score(g.home, proj?.home)}
+        {score(g.home, projected?.home)}
         {teamCol(g.home)}
       </div>
-
       {g.state !== 'pre' && <LineScore g={g} />}
-
-      {meta.length > 0 && (
-        <div className="gh-meta">
-          {meta.map((m) => (
-            <div key={m as string}>{m}</div>
-          ))}
-        </div>
-      )}
     </section>
   )
 }
+
+const infoDateFmt = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+
+/** Line, total, date, time, venue — icon rows like the iOS app's game info card. */
+function GameInfo({ s }: { s: GameSummary }) {
+  const g = s.game
+  const cells: { icon: ReactNode; text: string; wide?: boolean }[] = []
+  if (g.oddsDetails) cells.push({ icon: <ChartLine />, text: g.oddsDetails })
+  if (g.overUnder != null) cells.push({ icon: <ArrowsUpDown />, text: `O/U ${g.overUnder}` })
+  if (g.date) cells.push({ icon: <Calendar />, text: infoDateFmt.format(g.date) })
+  if (g.date && g.timeValid) cells.push({ icon: <Clock />, text: timeFmt.format(g.date) })
+  if (g.tv) cells.push({ icon: <TV />, text: g.tv, wide: true })
+  if (s.venue) cells.push({ icon: <Arena />, text: s.venue, wide: true })
+  if (s.attendance) cells.push({ icon: <People />, text: `${s.attendance.toLocaleString()} attendance`, wide: true })
+  if (g.note) cells.push({ icon: <Basketball />, text: g.note, wide: true })
+  if (!cells.length) return null
+  return (
+    <section className="card info-card">
+      {cells.map((c) => (
+        <div key={c.text} className={`info-cell ${c.wide ? 'wide' : ''}`}>
+          {c.icon}
+          <span>{c.text}</span>
+        </div>
+      ))}
+    </section>
+  )
+}
+
+const timeFmt = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
 
 function periodLabel(i: number) {
   return i === 0 ? '1st' : i === 1 ? '2nd' : i === 2 ? 'OT' : `${i - 1}OT`
@@ -147,16 +188,6 @@ function LineScore({ g }: { g: Game }) {
   )
 }
 
-function Pregame({ game }: { game: Game }) {
-  return (
-    <section className="card pregame">
-      <Basketball className="pregame-icon" />
-      <div className="pregame-title">{game.timeValid ? `Tip-off at ${statusText(game)}` : 'Tip-off time TBD'}</div>
-      <div className="pregame-text">The box score and plays appear once the game starts.</div>
-    </section>
-  )
-}
-
 /* ---------- box score ---------- */
 
 function BoxScore({ s }: { s: GameSummary }) {
@@ -184,11 +215,20 @@ function BoxScore({ s }: { s: GameSummary }) {
 }
 
 const WIDE = new Set(['FG', '3PT', 'FT'])
+const SHOOTING = WIDE
+
+/** "26-57" → "46%" */
+function percent(madeAttempted: string): string {
+  const [made, att] = madeAttempted.split('-').map(Number)
+  return att > 0 ? `${Math.round((made / att) * 100)}%` : ''
+}
 
 function BoxTable({ box }: { box: BoxTeam }) {
   const hasStarters = box.players.some((p) => p.starter)
-  const starters = hasStarters ? box.players.filter((p) => p.starter) : box.players
-  const bench = hasStarters ? box.players.filter((p) => !p.starter) : []
+  const starters = hasStarters ? box.players.filter((p) => p.starter) : box.players.filter((p) => !p.dnp)
+  const bench = hasStarters ? box.players.filter((p) => !p.starter && !p.dnp) : []
+  // Players who didn't get in are listed on one line instead of a row each.
+  const dnp = box.players.filter((p) => p.dnp && !p.starter)
   const hasTotals = box.totals.some(Boolean)
 
   const groupHeader = (label: string) => (
@@ -206,8 +246,9 @@ function BoxTable({ box }: { box: BoxTeam }) {
     list.map((p) => (
       <tr key={p.id}>
         <th scope="row">
-          <span className="box-name">{p.name}</span>
-          <span className="box-pos">{p.position}</span>
+          <span className="box-name full">{p.name}</span>
+          <span className="box-name short">{p.shortName}</span>
+          {p.jersey && <span className="box-jersey">#{p.jersey}</span>}
         </th>
         {p.dnp ? (
           <td colSpan={BOX_COLUMNS.length} className="dnp">
@@ -229,16 +270,29 @@ function BoxTable({ box }: { box: BoxTeam }) {
             {bench.length > 0 && groupHeader('Bench')}
             {playerRows(bench)}
             {hasTotals && (
-              <tr className="box-totals">
-                <th scope="row">Team</th>
-                {box.totals.map((v, i) => (
-                  <td key={i}>{v}</td>
-                ))}
-              </tr>
+              <>
+                <tr className="box-totals">
+                  <th scope="row">Team</th>
+                  {box.totals.map((v, i) => (
+                    <td key={i}>{v}</td>
+                  ))}
+                </tr>
+                <tr className="box-pct">
+                  <th scope="row" aria-label="Shooting percentage" />
+                  {box.totals.map((v, i) => (
+                    <td key={i}>{SHOOTING.has(BOX_COLUMNS[i]) ? percent(v) : ''}</td>
+                  ))}
+                </tr>
+              </>
             )}
           </tbody>
         </table>
       </div>
+      {dnp.length > 0 && (
+        <p className="box-dnp">
+          <span>Did not play</span> {dnp.map((p) => p.name).join(', ')}
+        </p>
+      )}
     </div>
   )
 }

@@ -1,25 +1,19 @@
 import { Link } from 'react-router-dom'
-import { isUpset, projection, statusText, type Game, type TeamSide } from '../lib/espn'
-import { ChevronRight } from './icons'
-import { Rank, TeamLogo, UpsetBadge } from './ui'
+import { isUpset, statusText, type Game, type TeamSide } from '../lib/espn'
+import { ChevronRight, TV } from './icons'
+import { TeamLogo, UpsetBadge } from './ui'
 
 export function GameRow({ game, to, back }: { game: Game; to: string; back: string }) {
-  const proj = game.state === 'pre' ? projection(game) : null
   const upset = isUpset(game)
 
-  const side = (t: TeamSide, projected: number | undefined) => {
+  const side = (t: TeamSide) => {
     const lost = game.state === 'final' && !t.winner
     return (
       <div className={`gr-team ${lost ? 'lost' : ''}`}>
-        <TeamLogo id={t.id} size={26} />
-        <Rank rank={t.rank} />
+        <TeamLogo id={t.id} size={28} />
         <span className="gr-name">{t.name}</span>
-        <span className="gr-record">{t.record}</span>
-        {game.state !== 'pre' ? (
-          <span className="gr-score">{t.score}</span>
-        ) : projected != null ? (
-          <span className="gr-proj">{projected}</span>
-        ) : null}
+        {t.rank && <span className="gr-rank">{t.rank}</span>}
+        {game.state !== 'pre' && <span className="gr-score">{t.score}</span>}
       </div>
     )
   }
@@ -28,13 +22,18 @@ export function GameRow({ game, to, back }: { game: Game; to: string; back: stri
     <Link to={to} state={{ back }} className="row row-link game-row">
       <div className="gr-teams">
         {game.note && <div className="gr-note">{game.note}</div>}
-        {side(game.away, proj?.away)}
-        {side(game.home, proj?.home)}
+        {side(game.away)}
+        {side(game.home)}
       </div>
       <div className={`gr-status ${game.state}`}>
         <span className="gr-state">{statusText(game)}</span>
-        {game.state === 'pre' && game.tv && <span className="gr-sub">{game.tv}</span>}
-        {proj && <span className="gr-sub">Proj.</span>}
+        {game.state === 'pre' && game.oddsDetails && <span className="gr-line">{game.oddsDetails}</span>}
+        {game.state !== 'final' && game.tv && (
+          <span className="gr-tv">
+            <TV />
+            {game.tv.split(', ')[0]}
+          </span>
+        )}
         {upset && <UpsetBadge live={game.state === 'live'} />}
       </div>
       <ChevronRight className="chevron" />

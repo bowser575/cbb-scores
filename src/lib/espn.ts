@@ -52,7 +52,10 @@ export interface Scoreboard {
 
 export interface BoxPlayer {
   id: string
+  /** Full name ("Yaxel Lendeborg") and short form ("Y. Lendeborg") for narrow screens. */
   name: string
+  shortName: string
+  jersey: string
   position: string
   starter: boolean
   dnp: boolean
@@ -130,7 +133,8 @@ export interface Roster {
   players: RosterPlayer[]
 }
 
-export const BOX_COLUMNS = ['MIN', 'PTS', 'REB', 'AST', 'FG', '3PT', 'FT', 'STL', 'BLK', 'TO', 'PF']
+/** ESPN's own box score columns and order. */
+export const BOX_COLUMNS = ['MIN', 'PTS', 'FG', '3PT', 'FT', 'REB', 'AST', 'TO', 'STL', 'BLK', 'OREB', 'DREB', 'PF']
 
 async function get(path: string): Promise<J> {
   const res = await fetch(BASE + path, { cache: 'no-store' })
@@ -223,7 +227,9 @@ export async function summary(gameId: string): Promise<GameSummary> {
     const pick = (stats: J[] = []) => indices.map((i) => (i >= 0 ? str(stats[i]) ?? '' : ''))
     const players: BoxPlayer[] = (st.athletes ?? []).map((a: J, i: number) => ({
       id: str(a.athlete?.id) ?? String(i),
-      name: a.athlete?.shortName ?? a.athlete?.displayName ?? '',
+      name: a.athlete?.displayName ?? a.athlete?.shortName ?? '',
+      shortName: a.athlete?.shortName ?? a.athlete?.displayName ?? '',
+      jersey: str(a.athlete?.jersey) ?? '',
       position: a.athlete?.position?.abbreviation ?? '',
       starter: a.starter === true,
       dnp: a.didNotPlay === true || !(a.stats ?? []).length,

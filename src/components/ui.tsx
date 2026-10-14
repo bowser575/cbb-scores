@@ -58,13 +58,49 @@ export function Segmented<T extends string | boolean>({
   )
 }
 
-/* ---------- inset grouped lists ---------- */
+/* ---------- glass controls ---------- */
 
-export function Section({ header, footer, children, flush }: { header?: ReactNode; footer?: ReactNode; children: ReactNode; flush?: boolean }) {
+/** A round Liquid Glass toolbar button holding one icon. */
+export function GlassButton({
+  label,
+  onClick,
+  children,
+  className = '',
+  pressed,
+}: {
+  label: string
+  onClick: () => void
+  children: ReactNode
+  className?: string
+  pressed?: boolean
+}) {
+  return (
+    <button className={`glass glass-circle ${className}`} onClick={onClick} aria-label={label} aria-pressed={pressed}>
+      {children}
+    </button>
+  )
+}
+
+/* ---------- lists ---------- */
+
+export function Section({
+  header,
+  footer,
+  children,
+  flush,
+  plain,
+}: {
+  header?: ReactNode
+  footer?: ReactNode
+  children: ReactNode
+  flush?: boolean
+  /** Edge-to-edge rows on phones (the scores list), rounded card on wider screens. */
+  plain?: boolean
+}) {
   return (
     <section className="section">
       {header && <h2 className="section-header">{header}</h2>}
-      {flush ? children : <div className="list">{children}</div>}
+      {flush ? children : <div className={`list ${plain ? 'plain' : ''}`}>{children}</div>}
       {footer && <div className="section-footer">{footer}</div>}
     </section>
   )
@@ -168,20 +204,31 @@ export function Menu<T extends string | number>({
   const [pos, setPos] = useState<CSSProperties>({})
 
   useLayoutEffect(() => {
-    if (!open || !button.current) return
+    if (!open) return setPos({})
+    if (!button.current) return
     const r = button.current.getBoundingClientRect()
-    const top = r.bottom + 6
+    // Buttons in the lower half (the floating filter) open their menu upward.
+    const above = r.top > window.innerHeight / 2
+    const x = align === 'end' ? { right: Math.max(8, window.innerWidth - r.right) } : { left: Math.max(8, r.left) }
     setPos({
-      top,
-      maxHeight: `min(${window.innerHeight - top - 16}px, 480px)`,
-      ...(align === 'end' ? { right: Math.max(8, window.innerWidth - r.right) } : { left: Math.max(8, r.left) }),
-      transformOrigin: align === 'end' ? 'top right' : 'top left',
+      ...x,
+      ...(above
+        ? { bottom: window.innerHeight - r.top + 8, maxHeight: `min(${r.top - 60}px, 520px)` }
+        : { top: r.bottom + 8, maxHeight: `min(${window.innerHeight - r.bottom - 24}px, 520px)` }),
+      transformOrigin: `${above ? 'bottom' : 'top'} ${align === 'end' ? 'right' : 'left'}`,
     })
   }, [open, align])
 
+  // Once positioned (and so scrollable), bring the current choice into view.
+  useLayoutEffect(() => {
+    if (!open || !pos.maxHeight) return
+    const el = panel.current
+    const checked = el?.querySelector<HTMLElement>('[aria-checked="true"]')
+    if (el && checked) el.scrollTop = checked.offsetTop - (el.clientHeight - checked.offsetHeight) / 2
+  }, [open, pos])
+
   useEffect(() => {
     if (!open) return
-    panel.current?.querySelector<HTMLElement>('[aria-checked="true"]')?.scrollIntoView({ block: 'center' })
     const close = (e: Event) => {
       if (e.type === 'keydown' && (e as KeyboardEvent).key !== 'Escape') return
       if (e.type === 'pointerdown' && (panel.current?.contains(e.target as Node) || button.current?.contains(e.target as Node))) return

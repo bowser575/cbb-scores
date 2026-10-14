@@ -1,38 +1,68 @@
-import { useDeferredValue, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ClearCircle, Search, Star } from '../components/icons'
 import { Page } from '../components/Page'
 import { Empty, Row, Section, TeamLogo } from '../components/ui'
 import { splitName, teams, type TeamInfo } from '../lib/directory'
 import { useFavorites } from '../lib/hooks'
 
-// Survives leaving the screen, so coming back from a team keeps the search.
-let lastQuery = ''
-
+/** Starred teams. Their games are pinned to the top of Scores. */
 export function TeamsPage() {
-  const [query, setQueryState] = useState(lastQuery)
-  const setQuery = (q: string) => setQueryState((lastQuery = q))
-  const [focused, setFocused] = useState(false)
-  const deferred = useDeferredValue(query)
   const favorites = useFavorites()
-
-  const term = deferred.trim().toLowerCase()
-  const matches = useMemo(
-    () => (term ? teams.filter((t) => `${t.full} ${t.abbr}`.toLowerCase().includes(term)) : teams),
-    [term],
-  )
+  const navigate = useNavigate()
   const mine = teams.filter((t) => favorites.has(t.id))
 
   return (
-    <Page title="Teams" large>
-      <div className={`search ${focused || query ? 'active' : ''}`}>
+    <Page title="My Teams" large subtitle={mine.length ? `${mine.length} starred` : undefined}>
+      {mine.length ? (
+        <Section footer="Games involving these teams are pinned to the top of Scores.">
+          {mine.map((t) => (
+            <TeamRow key={t.id} team={t} tab="teams" back="My Teams" />
+          ))}
+        </Section>
+      ) : (
+        <Empty
+          icon={<Star />}
+          title="No Teams Yet"
+          message="Find a team and tap the star to follow it. Its games will show first in Scores."
+          action={{ label: 'Search Teams', onClick: () => navigate('/search') }}
+        />
+      )}
+    </Page>
+  )
+}
+
+// Survives leaving the screen, so coming back from a team keeps the search.
+let lastQuery = ''
+
+export function SearchPage() {
+  const [query, setQueryState] = useState(lastQuery)
+  const setQuery = (q: string) => setQueryState((lastQuery = q))
+  const deferred = useDeferredValue(query)
+  const favorites = useFavorites()
+  const input = useRef<HTMLInputElement>(null)
+
+  // Opening Search from the tab bar is a request to type (skipped on touch, where it'd pop the keyboard).
+  useEffect(() => {
+    if (!lastQuery && window.matchMedia('(hover: hover)').matches) input.current?.focus()
+  }, [])
+
+  const term = deferred.trim().toLowerCase()
+  const matches = useMemo(
+    () => (term ? teams.filter((t) => `${t.full} ${t.name} ${t.abbr}`.toLowerCase().includes(term)) : teams),
+    [term],
+  )
+
+  return (
+    <Page title="Search" large>
+      <div className="search">
         <Search className="search-icon" />
         <input
+          ref={input}
           type="search"
-          placeholder="Search teams"
+          placeholder="Teams"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
           autoCorrect="off"
           autoCapitalize="off"
           spellCheck={false}
@@ -46,26 +76,10 @@ export function TeamsPage() {
         )}
       </div>
 
-      {!term &&
-        (mine.length ? (
-          <Section header="My Teams">
-            {mine.map((t) => (
-              <TeamRow key={t.id} team={t} starred />
-            ))}
-          </Section>
-        ) : (
-          <Section>
-            <div className="row hint">
-              <Star className="hint-icon" />
-              <span>Open a team and tap the star to pin its games to the top of Scores.</span>
-            </div>
-          </Section>
-        ))}
-
       {matches.length ? (
-        <Section header={term ? undefined : 'All Teams'}>
+        <Section header={term ? `${matches.length} ${matches.length === 1 ? 'Team' : 'Teams'}` : 'All Teams'}>
           {matches.map((t) => (
-            <TeamRow key={t.id} team={t} starred={favorites.has(t.id)} />
+            <TeamRow key={t.id} team={t} starred={favorites.has(t.id)} tab="search" back="Search" />
           ))}
         </Section>
       ) : (
@@ -75,10 +89,10 @@ export function TeamsPage() {
   )
 }
 
-function TeamRow({ team, starred }: { team: TeamInfo; starred: boolean }) {
+function TeamRow({ team, starred, tab, back }: { team: TeamInfo; starred?: boolean; tab: string; back: string }) {
   const { school, mascot } = splitName(team)
   return (
-    <Row to={`/teams/team/${team.id}`} state={{ back: 'Teams' }} inset={58}>
+    <Row to={`/${tab}/team/${team.id}`} state={{ back }} inset={60}>
       <TeamLogo id={team.id} size={30} />
       <span className="team-line">
         <span className="title">{school}</span>

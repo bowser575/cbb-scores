@@ -1,32 +1,36 @@
-import { WifiSlash } from '../components/icons'
+import { ChevronUpDown, WifiSlash } from '../components/icons'
 import { Page } from '../components/Page'
-import { Empty, Row, Section, Segmented, Spinner, TeamLogo } from '../components/ui'
+import { Empty, Menu, Row, Section, Spinner, TeamLogo } from '../components/ui'
 import { polls, type RankedTeam } from '../lib/espn'
 import { longDate } from '../lib/format'
 import { useResource, useStored } from '../lib/hooks'
+
+const POLLS = [
+  { value: 'ap', label: 'AP Top 25' },
+  { value: 'usa', label: 'Coaches Poll' },
+]
 
 export function RankingsPage() {
   const [pollType, setPollType] = useStored('poll', 'ap')
   const { data, error, reload } = useResource('polls', polls)
   const poll = data?.find((p) => p.type === pollType) ?? data?.[0]
+  const label = POLLS.find((p) => p.value === pollType)?.label ?? 'AP Top 25'
 
   return (
-    <Page title="Rankings" large>
-      <div className="controls">
-        <Segmented
-          label="Poll"
-          options={[
-            { value: 'ap', label: 'AP Top 25' },
-            { value: 'usa', label: 'Coaches Poll' },
-          ]}
-          value={pollType}
-          onChange={setPollType}
-        />
-      </div>
-
+    <Page
+      title={label}
+      subtitle={poll?.date ? `Updated ${longDate(poll.date)}` : ' '}
+      large
+      trailing={
+        <Menu items={POLLS} value={pollType} onChange={setPollType} label="Poll" className="glass glass-pill">
+          {pollType === 'ap' ? 'AP' : 'Coaches'}
+          <ChevronUpDown className="updown" />
+        </Menu>
+      }
+    >
       {poll ? (
         <>
-          <Section footer={poll.date && `Updated ${longDate(poll.date)}`}>
+          <Section plain>
             {poll.ranks.map((t) => (
               <RankRow key={t.teamId} team={t} />
             ))}
@@ -51,9 +55,9 @@ export function RankingsPage() {
 function RankRow({ team }: { team: RankedTeam }) {
   const sub = team.firstPlaceVotes > 0 ? `${team.record} · ${team.firstPlaceVotes} first-place` : team.record
   return (
-    <Row to={`/rankings/team/${team.teamId}`} state={{ back: 'Rankings' }} inset={96}>
+    <Row to={`/rankings/team/${team.teamId}`} state={{ back: 'Rankings' }} inset={98}>
       <span className="rank-number">{team.rank}</span>
-      <TeamLogo id={team.teamId} size={30} />
+      <TeamLogo id={team.teamId} size={32} />
       <span className="stack">
         <span className="title">{team.name}</span>
         <span className="subtitle">{sub}</span>
@@ -64,7 +68,7 @@ function RankRow({ team }: { team: RankedTeam }) {
 }
 
 function Trend({ team }: { team: RankedTeam }) {
-  if (team.isNew) return <span className="trend new">NEW</span>
+  if (team.isNew) return <span className="trend new">New</span>
   if (team.trend > 0)
     return (
       <span className="trend up">

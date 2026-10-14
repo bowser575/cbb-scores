@@ -2,7 +2,7 @@ import { useState, type CSSProperties } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Calendar, ChevronRight, ChevronUpDown, People, Star, WifiSlash } from '../components/icons'
 import { BackButton, Page } from '../components/Page'
-import { Empty, Menu, Rank, Section, Segmented, Spinner, TeamLogo } from '../components/ui'
+import { Empty, GlassButton, Menu, Rank, Section, Segmented, Spinner, TeamLogo } from '../components/ui'
 import { splitName, teamsById } from '../lib/directory'
 import { roster, schedule, statusText, type Game, type Roster, type TeamSchedule } from '../lib/espn'
 import { monthDay, Season } from '../lib/format'
@@ -23,35 +23,42 @@ export function TeamPage() {
 
   const title = info?.name ?? 'Team'
   const names = info ? splitName(info) : null
-  const subtitle = teamSubtitle(sched.data, id) ?? names?.mascot ?? ''
+  const subtitle = [names?.mascot, teamSubtitle(sched.data, id)].filter(Boolean).join(' · ')
 
   return (
     <Page
       title={title}
       leading={<BackButton />}
       trailing={
-        <button
-          className="icon-button star-button"
-          onClick={() => favorites.toggle(id)}
-          aria-pressed={starred}
-          aria-label={starred ? 'Remove from My Teams' : 'Add to My Teams'}
-        >
-          <Star filled={starred} />
-        </button>
+        <>
+          <Menu
+            items={Season.all.map((y) => ({ value: y, label: Season.label(y) }))}
+            value={season}
+            onChange={setSeason}
+            label="Season"
+            className="glass glass-pill"
+          >
+            {Season.label(season)}
+            <ChevronUpDown className="updown" />
+          </Menu>
+          <GlassButton
+            label={starred ? 'Remove from My Teams' : 'Add to My Teams'}
+            onClick={() => favorites.toggle(id)}
+            pressed={starred}
+            className="star-button"
+          >
+            <Star filled={starred} />
+          </GlassButton>
+        </>
       }
     >
-      <Section>
-        <div className="row team-header">
-          <span className="team-color" style={{ background: `#${info?.color ?? '888888'}` }} />
-          <TeamLogo id={id} size={60} />
-          <span className="stack">
-            <span className="team-name">{names?.school ?? title}</span>
-            <span className="subtitle">{subtitle}</span>
-          </span>
-        </div>
-      </Section>
+      <section className="card team-header">
+        <TeamLogo id={id} size={72} />
+        <div className="team-name">{names?.school ?? title}</div>
+        <div className="team-sub">{subtitle}</div>
+      </section>
 
-      <div className="controls split">
+      <div className="controls">
         <Segmented
           label="View"
           options={[
@@ -61,16 +68,6 @@ export function TeamPage() {
           value={tab}
           onChange={setTab}
         />
-        <Menu
-          items={Season.all.map((y) => ({ value: y, label: Season.label(y) }))}
-          value={season}
-          onChange={setSeason}
-          label="Season"
-          className="picker-menu"
-        >
-          {Season.label(season)}
-          <ChevronUpDown className="updown" />
-        </Menu>
       </div>
 
       {tab === 'schedule' ? (
