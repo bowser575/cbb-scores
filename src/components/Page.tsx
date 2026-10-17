@@ -64,7 +64,7 @@ export function Page({
 
   return (
     <>
-      <header ref={bar} className={`navbar ${scrolled ? 'scrolled' : ''} ${wide ? 'wide' : ''}`}>
+      <header ref={bar} className={`navbar ${scrolled ? 'scrolled' : ''} ${wide ? 'wide' : ''} ${large && !leading && !trailing ? 'toolbar-empty' : ''}`}>
         <div className="navbar-inner">
           <div className="navbar-leading">{leading}</div>
           <div className={`navbar-title ${titleInBar ? 'shown' : ''}`} aria-hidden={large || undefined}>
