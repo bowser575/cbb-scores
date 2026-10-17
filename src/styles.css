@@ -1,13 +1,13 @@
 /* Hoops — styled after iOS 26: Liquid Glass controls floating over edge-to-edge content. */
 
 :root {
-  --bg: #000000;
-  --bg-card: #1c1c1e;
-  --bg-sheet: #1c1c1e;
-  --label: #ffffff;
-  --label-2: rgba(235, 235, 245, 0.6);
-  --label-3: rgba(235, 235, 245, 0.3);
-  --sep: rgba(84, 84, 88, 0.6);
+  --bg: #131518;
+  --bg-card: #1c1f23;
+  --bg-sheet: #1c1f23;
+  --label: #f4f4f0;
+  --label-2: #a3a9ae;
+  --label-3: #81888e;
+  --sep: #33373c;
   --fill: rgba(118, 118, 128, 0.24);
   --fill-2: rgba(118, 118, 128, 0.36);
   --highlight: #2c2c2e;
@@ -21,10 +21,12 @@
   --glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
   --tab-pill: rgba(255, 255, 255, 0.1);
 
-  --accent: #0a84ff;
+  --accent: #ffab7d;
+  --accent-tint: #38291f;
+  --accent-ink: #202326;
   --red: #ff453a;
   --green: #30d158;
-  --green-text: #30d158;
+  --green-text: #8ad6a5;
   --yellow: #ffd60a;
 
   --hairline: 1px;
@@ -46,13 +48,13 @@
 
 @media (prefers-color-scheme: light) {
   :root {
-    --bg: #f2f2f7;
+    --bg: #f5f5f2;
     --bg-card: #ffffff;
     --bg-sheet: #ffffff;
-    --label: #000000;
-    --label-2: rgba(60, 60, 67, 0.6);
-    --label-3: rgba(60, 60, 67, 0.3);
-    --sep: rgba(60, 60, 67, 0.22);
+    --label: #202326;
+    --label-2: #62686c;
+    --label-3: #70767a;
+    --sep: #dedfda;
     --fill: rgba(118, 118, 128, 0.12);
     --fill-2: rgba(118, 118, 128, 0.2);
     --highlight: #e5e5ea;
@@ -66,10 +68,12 @@
     --glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
     --tab-pill: rgba(0, 0, 0, 0.06);
 
-    --accent: #007aff;
+    --accent: #ad3e14;
+    --accent-tint: #fff0e5;
+    --accent-ink: #ffffff;
     --red: #ff3b30;
     --green: #34c759;
-    --green-text: #248a3d;
+    --green-text: #267044;
     --yellow: #ffcc00;
 
     color-scheme: light;
@@ -140,23 +144,12 @@ h1, h2, p { margin: 0; font: inherit; }
 /* ---------- Liquid Glass ---------- */
 
 .glass {
-  background: var(--glass);
-  -webkit-backdrop-filter: blur(18px) saturate(190%);
-  backdrop-filter: blur(18px) saturate(190%);
-  box-shadow:
-    inset 0 0 0 var(--hairline) var(--glass-edge),
-    inset 0 1px 0 var(--glass-shine),
-    var(--glass-shadow);
+  background: var(--bg-card);
+  border: 1px solid var(--sep);
   color: var(--label);
-  transition: transform 0.25s var(--spring), background-color 0.2s;
+  transition: background-color 0.2s;
 }
-
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass { background: var(--glass-strong); }
-}
-
-button.glass:active,
-a.glass:active { transform: scale(0.92); }
+button.glass:active, a.glass:active { background: var(--highlight); }
 
 .glass-circle {
   display: grid;
@@ -174,7 +167,7 @@ a.glass:active { transform: scale(0.92); }
   gap: 6px;
   height: 44px;
   padding: 0 16px;
-  border-radius: 999px;
+  border-radius: 8px;
   font-size: 16px;
   font-weight: 500;
   white-space: nowrap;
@@ -183,7 +176,7 @@ a.glass:active { transform: scale(0.92); }
 
 .glass-pill.prominent {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
   font-weight: 600;
 }
 
@@ -196,7 +189,7 @@ a.glass:active { transform: scale(0.92); }
   place-items: center;
   width: 44px;
   height: 44px;
-  border-radius: 999px;
+  border-radius: 8px;
 }
 
 .stepper button:active { background: var(--tab-pill); }
@@ -223,75 +216,18 @@ a.glass:active { transform: scale(0.92); }
   from { opacity: 0; transform: translateX(-24px); }
 }
 
-/* Floating tab bar with search in its own circle, as in iOS 26. */
-.tabbar {
-  position: fixed;
-  z-index: 20;
-  left: 0;
-  right: 0;
-  bottom: calc(var(--safe-bottom) + 12px);
-  display: flex;
-  gap: 10px;
-  width: var(--dock-w);
-  margin: 0 auto;
-  pointer-events: none;
-}
-
-.tabbar > * { pointer-events: auto; }
-
-.tabbar-tabs {
-  flex: 1;
-  display: flex;
-  height: var(--dock-h);
-  padding: 4px;
-  border-radius: 999px;
-}
-
-.tab {
-  --tab-glyph: var(--bg-card);
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  border-radius: 999px;
-  color: var(--label);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0;
-  transition: background-color 0.25s, color 0.25s;
-}
-
-.tab svg { width: 25px; height: 25px; stroke-width: 1.7; }
-.tab.active { background: var(--tab-pill); color: var(--accent); }
-
-.tabbar-search {
-  width: var(--dock-h);
-  height: var(--dock-h);
-  flex: none;
-}
-
-.tabbar-search svg { width: 23px; height: 23px; }
-.tabbar-search.active { color: var(--accent); }
-
-/* The Scores filter floats above the search button. */
-.fab {
-  position: fixed;
-  z-index: 19;
-  left: 0;
-  right: 0;
-  bottom: calc(var(--safe-bottom) + 12px + var(--dock-h) + 12px);
-  display: flex;
-  justify-content: flex-end;
-  width: var(--dock-w);
-  margin: 0 auto;
-  pointer-events: none;
-}
-
-.fab > * { pointer-events: auto; }
-.fab .glass-circle { width: 54px; height: 54px; margin-right: 4px; }
-.fab .glass-circle svg { width: 22px; height: 22px; }
+/* Shared desktop navigation and full-width phone navigation. */
+.site-header { background: var(--bg-card); border-bottom: 1px solid var(--sep); padding-top: var(--safe-top); }
+.site-header-inner { max-width: 1160px; margin: auto; padding: 0 var(--gutter); display: flex; align-items: center; gap: 44px; min-height: 70px; }
+.brand { font-size: 27px; font-weight: 850; letter-spacing: -1.3px; }
+.brand span { color: var(--accent); }
+.tabbar { display: flex; gap: 30px; align-self: stretch; flex: 1; }
+.tab { --tab-glyph: var(--bg-card); display: flex; align-items: center; gap: 8px; color: var(--label-2); font-size: 14px; font-weight: 600; border-bottom: 3px solid transparent; padding-top: 3px; }
+.tab svg { width: 20px; height: 20px; }
+.tab:not(:last-child) svg { display: none; }
+.tab:last-child { margin-left: auto; }
+.tab.active { color: var(--label); border-color: var(--accent); }
+.tab:hover { color: var(--accent); }
 
 /* ---------- navigation bar ---------- */
 
@@ -407,7 +343,7 @@ a.glass:active { transform: scale(0.92); }
   grid-auto-columns: 1fr;
   height: 36px;
   padding: 3px;
-  border-radius: 999px;
+  border-radius: 8px;
   background: var(--fill);
   user-select: none;
 }
@@ -418,7 +354,7 @@ a.glass:active { transform: scale(0.92); }
   bottom: 3px;
   left: 3px;
   width: calc((100% - 6px) / var(--n));
-  border-radius: 999px;
+  border-radius: 8px;
   background: var(--seg-thumb);
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 1px 1px rgba(0, 0, 0, 0.04);
   transform: translateX(calc(100% * var(--i)));
@@ -435,7 +371,7 @@ a.glass:active { transform: scale(0.92); }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border-radius: 999px;
+  border-radius: 8px;
 }
 
 .seg button.on { font-weight: 600; }
@@ -464,7 +400,7 @@ a.glass:active { transform: scale(0.92); }
 .list,
 .card {
   background: var(--bg-card);
-  border-radius: 22px;
+  border-radius: 10px;
   overflow: hidden;
 }
 
@@ -673,7 +609,7 @@ a.glass:active { transform: scale(0.92); }
   margin-top: 16px;
   padding: 0 20px;
   height: 40px;
-  border-radius: 999px;
+  border-radius: 8px;
   background: var(--fill);
   font-size: 15px;
   font-weight: 600;
@@ -698,9 +634,9 @@ a.glass:active { transform: scale(0.92); }
   width: 100%;
   height: 50px;
   margin: 0 0 12px;
-  border-radius: 999px;
+  border-radius: 8px;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
   font-size: 17px;
   font-weight: 600;
   transition: transform 0.25s var(--spring), opacity 0.2s;
@@ -865,7 +801,7 @@ a.glass:active { transform: scale(0.92); }
   align-items: center;
   height: 44px;
   margin: 0 0 24px;
-  border-radius: 999px;
+  border-radius: 8px;
   background: var(--fill);
 }
 
@@ -1098,6 +1034,25 @@ a.glass:active { transform: scale(0.92); }
 
 .gh-tv svg { width: 15px; height: 15px; }
 .gh-proj-label { font-size: 12px; color: var(--accent); font-weight: 600; margin-top: 2px; }
+
+/* Stack each score below its team so the matchup fits narrow phones. */
+@media (max-width: 599px) {
+  .gh-top {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 90px) minmax(0, 1fr);
+    gap: 6px;
+    align-items: start;
+  }
+  .gh-top > .gh-team:first-child { grid-column: 1; grid-row: 1; }
+  .gh-top > .gh-score:nth-child(2) { grid-column: 1; grid-row: 2; }
+  .gh-top > .gh-status { grid-column: 2; grid-row: 1 / 3; align-self: center; }
+  .gh-top > .gh-score:nth-child(4) { grid-column: 3; grid-row: 2; }
+  .gh-top > .gh-team:last-child { grid-column: 3; grid-row: 1; }
+  .gh-abbr { flex-wrap: wrap; justify-content: center; overflow-wrap: anywhere; font-size: 15px; }
+  .gh-status { min-width: 0; overflow-wrap: anywhere; font-size: 13px; }
+  .gh-tv { flex-wrap: wrap; justify-content: center; }
+  .gh-record { font-size: 12px; }
+  .gh-score { min-width: 0; font-size: 34px; }
+}
 
 .linescore {
   width: 100%;
@@ -1518,7 +1473,7 @@ a.glass:active { transform: scale(0.92); }
   max-height: calc(100% - var(--safe-top) - 40px);
   overflow-y: auto;
   padding: 8px 4px 16px;
-  border-radius: 36px;
+  border-radius: 14px;
   background: var(--bg-sheet);
   box-shadow: 0 -2px 40px rgba(0, 0, 0, 0.25);
   animation: sheet-up 0.45s var(--ease);
@@ -1640,7 +1595,7 @@ a.glass:active { transform: scale(0.92); }
 
 .cal-day.today { color: var(--accent); }
 .cal-day.selected span { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); font-weight: 600; }
-.cal-day.selected.today span { background: var(--accent); color: #fff; }
+.cal-day.selected.today span { background: var(--accent); color: var(--accent-ink); }
 .cal-day.selected::after { display: none; }
 
 @media (hover: hover) {
@@ -1659,4 +1614,85 @@ a.glass:active { transform: scale(0.92); }
   }
 
   .spinner { animation-iteration-count: infinite !important; animation-duration: 0.8s !important; }
+}
+
+/* ---------- scoreboard ---------- */
+.main { min-height: calc(100dvh - 71px); padding-bottom: 32px; }
+.navbar.toolbar-empty { display: none; }
+.navbar::before { background: var(--bg); backdrop-filter: none; -webkit-backdrop-filter: none; mask-image: none; -webkit-mask-image: none; inset: 0; }
+.title-block { padding-top: 26px; padding-bottom: 22px; }
+.large-title { font-size: 30px; line-height: 1.2; }
+.large-subtitle { font-size: 14px; font-weight: 400; margin-top: 6px; }
+.scoreboard { max-width: 1160px; padding-top: 28px; }
+.scoreboard-heading { display: flex; justify-content: space-between; align-items: center; gap: 18px; margin-bottom: 22px; }
+.scoreboard-heading h1 { font-size: 30px; line-height: 1.15; font-weight: 750; letter-spacing: -1px; }
+.scoreboard-heading p { font-size: 13px; color: var(--label-2); margin-top: 7px; }
+.scoreboard-date { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--label-2); }
+.scoreboard-date .today-button { margin: 0; padding: 8px; font-size: 13px; }
+.date-strip { display: grid; grid-template-columns: 36px repeat(7, minmax(0, 1fr)) 36px; gap: 5px; padding-bottom: 16px; border-bottom: 1px solid var(--sep); }
+.date-day { border-radius: 7px; padding: 9px 3px; color: var(--label-2); font-size: 12px; }
+.date-day strong { display: block; margin-top: 3px; color: var(--label); font-size: 18px; font-weight: 650; }
+.date-day.selected { color: var(--accent); background: var(--accent-tint); box-shadow: inset 0 -2px var(--accent); }
+.date-day.selected strong { color: var(--accent); }
+.date-step { display: grid; place-items: center; border-radius: 7px; color: var(--label-2); }
+.date-step svg { width: 14px; height: 18px; }
+.date-step:disabled { opacity: .4; cursor: default; }
+.date-step:hover:not(:disabled), .date-day:hover:not(.selected) { background: var(--fill); }
+.score-filters { display: flex; flex-wrap: wrap; gap: 7px; padding: 16px 0 20px; align-items: center; }
+.score-filter, .score-filters select { background: var(--bg-card); border: 1px solid var(--sep); border-radius: 6px; padding: 8px 12px; min-height: 38px; font: inherit; font-size: 13px; color: var(--label); }
+.score-filter[aria-pressed="true"] { background: var(--label); color: var(--bg); border-color: var(--label); }
+.score-filters select { margin-left: auto; max-width: 100%; cursor: pointer; }
+.scoreboard-section-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.scoreboard-section-title h2, .scoreboard-group h2 { font-size: 14px; font-weight: 650; }
+.scoreboard-section-title > span { color: var(--label-2); font-size: 12px; }
+.scoreboard-group { margin-bottom: 22px; }
+.scoreboard-group > h2 { margin: 4px 0 12px; color: var(--accent); }
+.score-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.score-card { display: flex; flex-direction: column; min-width: 0; background: var(--bg-card); border: 1px solid var(--sep); border-radius: 10px; padding: 14px 16px 0; transition: border-color .15s, background-color .15s; }
+.score-card:hover { border-color: var(--label-3); }
+.score-card:active { background: var(--highlight); }
+.score-card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 24px; margin-bottom: 8px; font-size: 12px; color: var(--label-2); }
+.score-card-state { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.score-card.live .score-card-state { color: var(--green-text); }
+.score-card-state i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.score-card .gr-team { height: auto; min-height: 44px; gap: 6px; }
+.score-card .gr-team .logo { margin-right: 5px; }
+.score-card .gr-name { font-size: 16px; }
+.score-card .gr-rank { align-self: center; padding-bottom: 0; font-size: 11px; }
+.score-card .gr-score { font-size: 27px; font-weight: 750; padding-left: 12px; }
+.score-card.pre .gr-score { font-size: 22px; color: var(--label-3); }
+.score-card-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; margin-top: 12px; border-top: 1px solid var(--sep); padding: 10px 0; color: var(--label-2); font-size: 11px; line-height: 1.5; }
+.score-card-bottom > span { overflow-wrap: anywhere; }
+.scoreboard .disclaimer { margin: 26px auto 10px; max-width: 680px; }
+.glass-pill.prominent { color: var(--accent-ink); }
+.sheet-bar .glass { box-shadow: none; }
+.sheet-bar .glass.prominent { color: var(--accent-ink); }
+.menu { border-radius: 12px; background: var(--bg-card); backdrop-filter: none; -webkit-backdrop-filter: none; border: 1px solid var(--sep); }
+
+@media (max-width: 699px) {
+  .site-header-inner { min-height: 60px; }
+  .brand { font-size: 25px; }
+  .tabbar { position: fixed; z-index: 20; bottom: 0; left: 0; right: 0; background: var(--bg-card); border-top: 1px solid var(--sep); padding: 6px 8px calc(6px + var(--safe-bottom)); gap: 0; min-height: 68px; }
+  .tab { display: flex; flex: 1; flex-direction: column; justify-content: center; gap: 4px; padding: 6px 0; font-size: 11px; border: 0; }
+  .tab:not(:last-child) svg, .tab svg { display: block; width: 21px; height: 21px; }
+  .tab:last-child { margin: 0; }
+  .tab.active { color: var(--accent); }
+  .main { padding-bottom: calc(86px + var(--safe-bottom)); min-height: calc(100dvh - 61px); }
+  .scoreboard { padding-top: 24px; }
+  .score-grid { grid-template-columns: minmax(0, 1fr); }
+  .scoreboard-heading { align-items: flex-start; flex-wrap: wrap; gap: 14px; margin-bottom: 16px; }
+  .scoreboard-heading h1 { font-size: 28px; }
+  .scoreboard-date { gap: 8px; flex-wrap: wrap; font-size: 12px; }
+  .scoreboard-date .glass-circle { width: 38px; height: 38px; border-radius: 7px; }
+  .date-strip { grid-template-columns: 24px repeat(7, minmax(0, 1fr)) 24px; gap: 2px; }
+  .date-day { font-size: 10px; padding: 8px 1px; }
+  .date-day strong { font-size: 17px; }
+  .score-filter { padding-inline: 8px; font-size: 12px; }
+  .score-filters select { flex: 1 1 100%; margin-left: 0; }
+}
+@media (pointer: coarse) {
+  .score-filter, .score-filters select { min-height: 44px; }
+  .score-filters select { font-size: 16px; }
+  .date-step, .date-day { min-height: 44px; }
+  .scoreboard-date .glass-circle { width: 44px; height: 44px; }
 }

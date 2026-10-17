@@ -3,7 +3,7 @@ import { betResult, isUpset, lineLabel, statusText, type Game, type TeamSide } f
 import { ChevronRight, TV } from './icons'
 import { TeamLogo, UpsetBadge } from './ui'
 
-export function GameRow({ game, to, back }: { game: Game; to: string; back: string }) {
+export function GameRow({ game, to, back, card = false }: { game: Game; to: string; back: string; card?: boolean }) {
   const upset = isUpset(game)
   const line = lineLabel(game)
   const cover = betResult(game)?.cover
@@ -12,13 +12,32 @@ export function GameRow({ game, to, back }: { game: Game; to: string; back: stri
     const lost = game.state === 'final' && !t.winner
     return (
       <div className={`gr-team ${lost ? 'lost' : ''}`}>
-        <TeamLogo id={t.id} size={28} />
+        <TeamLogo id={t.id} size={card ? 32 : 28} />
         <span className="gr-name">{t.name}</span>
         {t.rank && <span className="gr-rank">{t.rank}</span>}
-        {game.state !== 'pre' && <span className="gr-score">{t.score}</span>}
+        {(card || game.state !== 'pre') && <span className="gr-score">{game.state === 'pre' ? '–' : t.score}</span>}
       </div>
     )
   }
+
+  if (card) return (
+    <Link to={to} state={{ back }} className={`score-card ${game.state}`}>
+      <div className="score-card-top">
+        <span className="score-card-state">
+          {game.state === 'live' && <i />}
+          {game.state === 'live' ? 'Live · ' : ''}{statusText(game)}
+        </span>
+        {upset && <UpsetBadge live={game.state === 'live'} />}
+      </div>
+      {side(game.away)}
+      {side(game.home)}
+      <div className="score-card-bottom">
+        <span>{[game.tv?.split(', ')[0], game.note].filter(Boolean).join(' · ') || (game.state === 'final' ? 'Box score' : 'Game details')}</span>
+        {line && <span>{line}</span>}
+        {cover && <span>{cover === 'push' ? 'Push' : `${game[cover].abbr} covered`}</span>}
+      </div>
+    </Link>
+  )
 
   return (
     <Link to={to} state={{ back }} className="row row-link game-row">
