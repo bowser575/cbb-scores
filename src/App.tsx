@@ -49,37 +49,25 @@ function Layout() {
 
   return (
     <div className="app">
-      <nav className="tabbar" aria-label="Sections">
-        <div className="glass tabbar-tabs">
-          {TABS.map((t) => (
-            <a
-              key={t.id}
-              href={`#/${t.id}`}
-              className={`tab ${t.id === tab ? 'active' : ''}`}
-              aria-current={t.id === tab ? 'page' : undefined}
-              onClick={(e) => {
-                e.preventDefault()
-                go(t.id)
-              }}
-            >
-              {t.icon(t.id === tab)}
-              <span>{t.label}</span>
-            </a>
-          ))}
+      <header className="site-header">
+        <div className="site-header-inner">
+          <a className="brand" href="#/scores" aria-label="Hoops home" onClick={(e) => { e.preventDefault(); go('scores') }}>hoops<span>.</span></a>
+          <nav className="tabbar" aria-label="Sections">
+            {[...TABS, { id: 'search' as TabId, label: 'Search', icon: () => <Search /> }].map((t) => (
+              <a
+                key={t.id}
+                href={`#/${t.id}`}
+                className={`tab ${t.id === tab ? 'active' : ''}`}
+                aria-current={t.id === tab ? 'page' : undefined}
+                onClick={(e) => { e.preventDefault(); go(t.id) }}
+              >
+                {t.icon(t.id === tab)}
+                <span>{t.label}</span>
+              </a>
+            ))}
+          </nav>
         </div>
-        <a
-          href="#/search"
-          className={`glass glass-circle tabbar-search ${tab === 'search' ? 'active' : ''}`}
-          aria-label="Search teams"
-          aria-current={tab === 'search' ? 'page' : undefined}
-          onClick={(e) => {
-            e.preventDefault()
-            go('search')
-          }}
-        >
-          <Search />
-        </a>
-      </nav>
+      </header>
       <main className="main">
         <div ref={screen} className="screen" key={location.pathname}>
           <Outlet />
