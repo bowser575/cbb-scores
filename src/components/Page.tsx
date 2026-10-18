@@ -35,7 +35,7 @@ export function Page({
   const largeTitle = useRef<HTMLHeadingElement>(null)
 
   useEffect(() => {
-    document.title = title ? `${title} · Hoops` : 'Hoops'
+    document.title = title ? `${title} · CBB Scores` : 'CBB Scores'
   }, [title])
 
   useEffect(() => {

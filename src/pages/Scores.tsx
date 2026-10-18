@@ -57,7 +57,7 @@ export function ScoresPage() {
     'score-group',
     GROUPS.some((g) => g.value === legacyView) ? legacyView : ALL_DIVISION_I,
   )
-  useEffect(() => { document.title = 'Scoreboard · Hoops' }, [])
+  useEffect(() => { document.title = 'Scoreboard · CBB Scores' }, [])
   const [picking, setPicking] = useState(false)
   const favorites = useFavorites()
 

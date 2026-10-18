@@ -1,4 +1,4 @@
-# Hoops
+# CBB Scores
 
 Men's college basketball scores, rankings, and teams — a responsive React scoreboard with ESPN team logos and a restrained orange accent.
 

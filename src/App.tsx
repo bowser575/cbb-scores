@@ -51,7 +51,7 @@ function Layout() {
     <div className="app">
       <header className="site-header">
         <div className="site-header-inner">
-          <a className="brand" href="#/scores" aria-label="Hoops home" onClick={(e) => { e.preventDefault(); go('scores') }}>hoops<span>.</span></a>
+          <a className="brand" href="#/scores" aria-label="CBB Scores home" onClick={(e) => { e.preventDefault(); go('scores') }}>CBB Scores<span>.</span></a>
           <nav className="tabbar" aria-label="Sections">
             {[...TABS, { id: 'search' as TabId, label: 'Search', icon: () => <Search /> }].map((t) => (
               <a

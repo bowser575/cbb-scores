@@ -1,6 +1,6 @@
 {
-  "name": "Hoops",
-  "short_name": "Hoops",
+  "name": "CBB Scores",
+  "short_name": "CBB Scores",
   "description": "Men's college basketball scores, rankings, and teams.",
   "start_url": "./",
   "scope": "./",
