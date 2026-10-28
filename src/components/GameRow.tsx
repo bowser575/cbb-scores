@@ -2,8 +2,9 @@ import { Link } from 'react-router-dom'
 import { betResult, isUpset, lineLabel, statusText, type Game, type TeamSide } from '../lib/espn'
 import { ChevronRight, TV } from './icons'
 import { TeamLogo, UpsetBadge } from './ui'
+import type { Prediction } from '../lib/torvik'
 
-export function GameRow({ game, to, back, card = false }: { game: Game; to: string; back: string; card?: boolean }) {
+export function GameRow({ game, to, back, card = false, prediction }: { game: Game; to: string; back: string; card?: boolean; prediction?: Prediction }) {
   const upset = isUpset(game)
   const line = lineLabel(game)
   const cover = betResult(game)?.cover
@@ -31,6 +32,20 @@ export function GameRow({ game, to, back, card = false }: { game: Game; to: stri
       </div>
       {side(game.away)}
       {side(game.home)}
+      {prediction && (
+        <div className="torvik-prediction">
+          <span className="torvik-label">Torvik prediction</span>
+          <span className="torvik-score">
+            {game.away.abbr} {Math.round(prediction.teams[game.away.id].score)}
+            {' – '}{game.home.abbr} {Math.round(prediction.teams[game.home.id].score)}
+          </span>
+          <span className="torvik-chance">
+            {prediction.teams[game.away.id].winProbability >= .5
+              ? `${game.away.abbr} ${Math.round(prediction.teams[game.away.id].winProbability * 100)}%`
+              : `${game.home.abbr} ${Math.round(prediction.teams[game.home.id].winProbability * 100)}%`} to win
+          </span>
+        </div>
+      )}
       <div className="score-card-bottom">
         <span>{[game.tv?.split(', ')[0], game.note].filter(Boolean).join(' · ') || (game.state === 'final' ? 'Box score' : 'Game details')}</span>
         {line && <span>{line}</span>}

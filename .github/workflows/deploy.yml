@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Refresh Torvik's bulk predictions four times daily (UTC).
+    - cron: '17 5,11,17,23 * * *'
 
 permissions:
   contents: read
@@ -24,6 +27,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/refresh-torvik.py
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:

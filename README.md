@@ -2,11 +2,12 @@
 
 Men's college basketball scores, rankings, and teams — a responsive React scoreboard with ESPN team logos and a restrained orange accent.
 
-Data comes straight from ESPN's public site API in the browser; there's no backend.
+Scores come straight from ESPN's public site API in the browser; there's no backend. Bart Torvik predictions are fetched during deployment and served as a cached static file.
 
 ## Features
 
 - **Scores** — any game day of the season via the date strip or calendar; filter by All / Live / Top 25 / Close; any conference or the NCAA Tournament. Live games refresh every 20 seconds.
+- **Torvik predictions** — projected scores and the favored team's win probability on matching scoreboard cards, labeled separately from sportsbook odds. Includes source attribution and the cache fetch time.
 - **Game** — line score, venue/TV, box score per team, team stat comparison, play-by-play (all or scoring only). Projected scores from the betting line before tip-off; upsets are flagged.
 - **Odds** — ESPN's sportsbook line on every game that has one: the spread on each score row (with who covered once it's final), and on the game page the spread, total and moneyline with their prices, where the line opened, and the winning side of each bet once the game ends.
 - **Rankings** — AP and Coaches polls with movement and others receiving votes.
@@ -32,6 +33,16 @@ npm run build
 ```
 
 `dist/` is a static site and works from any path (routes use the URL hash).
+
+## Prediction data
+
+Run `python scripts/refresh-torvik.py` to refresh `public/data/torvik.json` before building locally (Python 3.10+; standard library only). `--season 2027` explicitly selects the season ending in 2027. The bundled cache supports local development without a network fetch.
+
+The Pages workflow refreshes and deploys at 05:17, 11:17, 17:17, and 23:17 UTC daily, plus pushes and manual runs. GitHub schedules can be delayed. Enable scheduled Actions on the default branch for automatic updates. A failed download or invalid feed fails the build, leaving the previous deployment in place; the displayed fetch timestamp makes cache age visible.
+
+Data comes from `https://barttorvik.com/{season}_super_sked.json`, using the [column reference published by Bart Torvik](https://adamcwisports.blogspot.com/p/data.html). We fetch the bulk file once per deployment. Matchups use the Eastern game date and ESPN team IDs; `scripts/torvik-aliases.json` maps different school names explicitly. Unknown schools and missing predictions are omitted, never guessed. The cache contains one season, so dates outside it have no predictions. These are the feed's current projections, not a guaranteed archive of original pregame picks. Bart asks developers using the data to get in touch; credit and a source link appear on the scoreboard.
+
+Verify ingestion and matchup matching with `python scripts/test-torvik.py` and `node scripts/test-torvik.mjs`.
 
 ## Deploy
 

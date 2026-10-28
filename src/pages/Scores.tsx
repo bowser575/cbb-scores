@@ -8,6 +8,7 @@ import { conferences } from '../lib/directory'
 import { ALL_DIVISION_I, margin, NCAA_TOURNAMENT, scoreboard, type Game } from '../lib/espn'
 import { fromYMD, todayYMD, ymd } from '../lib/format'
 import { useFavorites, useResource, useStored } from '../lib/hooks'
+import { predictionFor, torvikPredictions } from '../lib/torvik'
 
 /** The former single-choice preference, retained to migrate existing browser settings. */
 type View = string
@@ -60,6 +61,7 @@ export function ScoresPage() {
   useEffect(() => { document.title = 'Scoreboard · CBB Scores' }, [])
   const [picking, setPicking] = useState(false)
   const favorites = useFavorites()
+  const { data: predictions, error: predictionError } = useResource('torvik', torvikPredictions, () => 15 * 60_000)
 
   const { data, error, reload } = useResource(
     `scores|${requested ?? '-'}|${group}`,
@@ -94,7 +96,7 @@ export function ScoresPage() {
   const mine = visible.filter((g) => favorites.has(g.away.id) || favorites.has(g.home.id))
   const rest = visible.filter((g) => !mine.includes(g))
   const rows = (games: Game[]) => games.map((g) => (
-    <GameRow key={g.id} game={g} to={`/scores/game/${g.id}`} back="Scoreboard" card />
+    <GameRow key={g.id} game={g} to={`/scores/game/${g.id}`} back="Scoreboard" card prediction={predictionFor(g, predictions)} />
   ))
 
   const date = selected ? fromYMD(selected) : null
@@ -199,6 +201,11 @@ export function ScoresPage() {
         </>
       )}
 
+      <p className="torvik-credit">
+        Predictions by <a href="https://barttorvik.com/schedule.php" target="_blank" rel="noreferrer">Bart Torvik</a>.
+        {predictions ? ` Fetched ${new Date(predictions.updatedAt).toLocaleString()}.` : predictionError ? ' Predictions temporarily unavailable.' : ' Loading predictions…'}
+        {' '}Shown where available; predictions are separate from sportsbook odds.
+      </p>
       <Disclaimer />
 
       <Sheet open={picking} onClose={() => setPicking(false)} label="Go to date">
