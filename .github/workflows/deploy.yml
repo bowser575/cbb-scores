@@ -5,8 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
   schedule:
-    # Refresh Torvik's predictions once each morning: 11:17 UTC = 6:17am EST / 7:17am EDT.
-    - cron: '17 11 * * *'
+    # Refresh Torvik's predictions twice each morning (UTC): 08:17 = 3:17am EST / 4:17am EDT,
+    # 11:17 = 6:17am EST / 7:17am EDT. The second run also retries a failed or skipped first one.
+    - cron: '17 8,11 * * *'
 
 permissions:
   contents: read
