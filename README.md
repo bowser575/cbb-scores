@@ -38,7 +38,7 @@ npm run build
 
 Run `python scripts/refresh-torvik.py` to refresh `public/data/torvik.json` before building locally (Python 3.10+; standard library only). `--season 2027` explicitly selects the season ending in 2027. The bundled cache supports local development without a network fetch.
 
-The Pages workflow refreshes and deploys at 05:17, 11:17, 17:17, and 23:17 UTC daily, plus pushes and manual runs. GitHub schedules can be delayed. Enable scheduled Actions on the default branch for automatic updates. A failed download or invalid feed fails the build, leaving the previous deployment in place; the displayed fetch timestamp makes cache age visible.
+The Pages workflow refreshes and deploys once each morning at 11:17 UTC (6:17am Eastern in standard time, 7:17am in daylight time), plus pushes and manual runs. GitHub schedules can be delayed. Enable scheduled Actions on the default branch for automatic updates. A failed download or invalid feed fails the build, leaving the previous deployment in place; the displayed fetch timestamp makes cache age visible.
 
 Data comes from `https://barttorvik.com/{season}_super_sked.json`, using the [column reference published by Bart Torvik](https://adamcwisports.blogspot.com/p/data.html). We fetch the bulk file once per deployment. Matchups use the Eastern game date and ESPN team IDs; `scripts/torvik-aliases.json` maps different school names explicitly. Unknown schools and missing predictions are omitted, never guessed. The cache contains one season, so dates outside it have no predictions. These are the feed's current projections, not a guaranteed archive of original pregame picks. Bart asks developers using the data to get in touch; credit and a source link appear on the scoreboard.
 
