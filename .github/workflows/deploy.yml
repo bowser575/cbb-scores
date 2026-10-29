@@ -32,7 +32,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python scripts/refresh-torvik.py
+      # A failed fetch must not block deploys; fall back to the committed cache.
+      - id: torvik
+        run: python scripts/refresh-torvik.py
+        continue-on-error: true
+      - if: steps.torvik.outcome == 'failure'
+        run: echo "::warning::Torvik refresh failed; deploying the committed public/data/torvik.json"
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:

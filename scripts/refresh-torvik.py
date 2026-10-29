@@ -10,9 +10,11 @@ import math
 from pathlib import Path
 import re
 import unicodedata
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
+# Identify ourselves; sites like Torvik's often block Python's default User-Agent.
+USER_AGENT = 'cbb-scores/1.0 (+https://github.com/bowser575/cbb-scores)'
 
 
 def normalize(name):
@@ -62,7 +64,7 @@ def main():
     parser.add_argument('--season', type=int, default=now.year + (now.month >= 7))
     args = parser.parse_args()
     url = f'https://barttorvik.com/{args.season}_super_sked.json'
-    with urlopen(url, timeout=45) as response:
+    with urlopen(Request(url, headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'}), timeout=45) as response:
         rows = json.load(response)
     if not isinstance(rows, list) or not rows:
         raise ValueError('Empty or invalid Torvik feed')
