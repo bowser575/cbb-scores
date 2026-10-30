@@ -1,6 +1,7 @@
 import { useState, type CSSProperties, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Arena, Basketball, Calendar, Clock, People, TV, WifiSlash } from '../components/icons'
+import { GameFlow, WinChance, awayChanceNow } from '../components/GameFlow'
 import { BackButton, Page } from '../components/Page'
 import { Disclaimer, Empty, Segmented, Spinner, TeamLogo, UpsetBadge } from '../components/ui'
 import {
@@ -21,6 +22,7 @@ import {
   type TeamSide,
 } from '../lib/espn'
 import { useResource } from '../lib/hooks'
+import { pregameHomeChance, torvikPredictions } from '../lib/torvik'
 
 type Tab = 'box' | 'team' | 'plays'
 
@@ -29,11 +31,14 @@ export function GamePage() {
   const { data, error, reload } = useResource(`game|${id}`, () => summary(id), (s) => (s.game.state === 'live' ? 20_000 : null))
   const [tab, setTab] = useState<Tab>('box')
   const [showProjection, setShowProjection] = useState(false)
+  const { data: feed } = useResource('torvik', torvikPredictions)
 
   const g = data?.game
   const title = g ? `${g.away.name} ${g.neutral ? 'vs' : '@'} ${g.home.name}` : ''
   const proj = g?.state === 'pre' ? projection(g) : null
   const started = g && !(g.state === 'pre' && Object.keys(data.boxes).length === 0)
+  const pregame = g ? pregameHomeChance(g, feed) : null
+  const awayChance = g && data ? awayChanceNow(g, data.plays, pregame?.chance ?? null) : null
 
   return (
     <Page title={title} leading={<BackButton />} wide>
@@ -45,6 +50,8 @@ export function GamePage() {
               {showProjection ? 'Hide Projected Score' : 'Show Projected Score'}
             </button>
           )}
+          {pregame && awayChance != null && g.state !== 'final' && <WinChance game={g} awayChance={awayChance} source={pregame.source} />}
+          {started && <GameFlow game={g} plays={data.plays} pregameHome={pregame?.chance ?? null} />}
           {started ? (
             <>
               <div className="controls">

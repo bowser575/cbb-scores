@@ -1702,3 +1702,79 @@ button.glass:active, a.glass:active { background: var(--highlight); }
   .date-step, .date-day { min-height: 44px; }
   .scoreboard-date .glass-circle { width: 44px; height: 44px; }
 }
+
+/* ---------- Torvik outlook (team page) ---------- */
+
+.torvik-outlook { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 14px 10px; padding: 16px; }
+.outlook-stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.outlook-value { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+.outlook-label { font-size: 11px; color: var(--label-2); text-transform: uppercase; letter-spacing: .04em; font-weight: 600; }
+.outlook-note { grid-column: 1 / -1; margin: 0; font-size: 12px; line-height: 1.5; color: var(--label-2); }
+.outlook-note a { color: var(--accent); text-decoration: underline; }
+.sched-proj { font-size: 12px; color: var(--label-2); }
+.sched-proj.fav { color: var(--accent); font-weight: 600; }
+
+/* ---------- T-Rank and standings tables ---------- */
+
+.trank-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.trank-hint { font-size: 12px; color: var(--label-2); }
+.trank-row, .standings-row { gap: 8px; padding-left: 10px; padding-right: 10px; font-variant-numeric: tabular-nums; }
+.trank-row .rank-number, .standings-row .rank-number { width: 26px; flex-shrink: 0; font-size: 15px; }
+.trank-team, .standings-team { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trank-num, .standings-num { display: flex; flex-direction: column; align-items: flex-end; width: 48px; flex-shrink: 0; font-size: 14px; line-height: 1.2; text-align: right; }
+.trank-num small { font-size: 10px; color: var(--label-3); }
+.trank-num small.over { color: var(--red); font-weight: 700; }
+.trank-num small.under { color: var(--green-text); font-weight: 700; }
+.trank-nr { color: var(--label-3); }
+.trank-head, .standings-head { min-height: 34px; padding-top: 6px; padding-bottom: 6px; color: var(--label-2); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.trank-head .rank-number, .standings-head .rank-number { font-size: 11px; }
+.trank-head .trank-team, .standings-head .standings-team { margin-left: 36px; }
+.trank-head span, .standings-head span { font-size: 11px; }
+.trank-head::after, .standings-head::after { content: ''; width: 8px; flex-shrink: 0; }
+.standings-num { width: 52px; }
+.standings-num.gb { width: 34px; }
+.standings-num.streak { width: 36px; }
+.standings-num.strong { font-weight: 650; }
+.standings-num.streak.win { color: var(--green-text); }
+.standings-num.streak.loss { color: var(--red); }
+.standings-row.starred .standings-team::after { content: ' ★'; color: var(--yellow); }
+.standings-wide { display: none; }
+@media (min-width: 600px) { .standings-wide { display: flex; } }
+@media (max-width: 420px) {
+  .trank-tempo { display: none; }
+  .trank-num, .standings-num { width: 42px; font-size: 13px; }
+  .standings-num.gb { width: 26px; }
+  .standings-num.streak { width: 30px; }
+  .standings-row { gap: 6px; }
+}
+
+/* ---------- game flow and win probability ---------- */
+
+.flow, .win-chance { padding: 4px 14px 14px; }
+.flow-head, .wc-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; font-size: 17px; font-weight: 650; }
+.flow-head .seg { width: 160px; }
+.flow-chart { position: relative; height: 180px; touch-action: pan-y; }
+.flow-chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.flow-mid { stroke: var(--label-3); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.flow-half { stroke: var(--sep); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
+.flow-area { stroke: none; opacity: .38; }
+.flow-area.away { fill: var(--away); }
+.flow-area.home { fill: var(--home); }
+.flow-line { fill: none; stroke: var(--label); stroke-width: 1.6; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.flow-team { position: absolute; left: 4px; z-index: 1; display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: var(--label-2); pointer-events: none; }
+.flow-team.top { top: 4px; }
+.flow-team.bottom { bottom: 4px; }
+.flow-cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--label-2); pointer-events: none; }
+.flow-tip { position: absolute; top: 4px; transform: translateX(8px); display: flex; flex-direction: column; gap: 1px; padding: 6px 8px; border-radius: 6px; background: var(--bg-sheet); border: 1px solid var(--sep); box-shadow: 0 4px 14px rgba(0, 0, 0, .15); font-size: 12px; white-space: nowrap; pointer-events: none; }
+.flow-tip.flip { transform: translateX(calc(-100% - 8px)); }
+.flow-tip span { color: var(--label-2); }
+.flow-axis { display: flex; justify-content: space-around; margin-top: 6px; font-size: 11px; color: var(--label-3); }
+.flow-stats { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; margin-top: 10px; font-size: 12px; color: var(--label-2); }
+.wc-live { color: var(--red); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.wc-teams { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; font-size: 14px; font-weight: 600; }
+.wc-team { display: inline-flex; align-items: center; gap: 6px; }
+.wc-team b { font-size: 17px; }
+.wc-bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--fill); gap: 2px; }
+.wc-away { width: var(--split); background: var(--away); transition: width .4s var(--ease); }
+.wc-home { flex: 1; background: var(--home); }
+.wc-note { margin: 8px 0 0; font-size: 12px; color: var(--label-2); }

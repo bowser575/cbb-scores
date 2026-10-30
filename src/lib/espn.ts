@@ -41,6 +41,10 @@ export interface Game {
   tv: string
   timeValid: boolean
   odds: Odds | null
+  /** 1 and 2 are halves, 3+ overtimes; 0 before tip-off. */
+  period: number
+  /** Seconds left in the period, when ESPN sends the clock. */
+  clock: number | null
 }
 
 /** The betting line from ESPN's sportsbook. Prices are American odds (-110, +270). */
@@ -100,6 +104,8 @@ export interface Play {
   awayScore: number
   homeScore: number
   teamId: string | null
+  /** Seconds of game time played when this happened (halves are 20:00, overtimes 5:00). */
+  elapsed: number | null
 }
 
 export interface GameSummary {
@@ -126,7 +132,7 @@ export interface Poll {
   name: string
   date: Date | null
   ranks: RankedTeam[]
-  others: { name: string; points: number }[]
+  others: { teamId: string; name: string; points: number }[]
 }
 
 export interface TeamSchedule {
@@ -134,6 +140,27 @@ export interface TeamSchedule {
   games: Game[]
   record: string | null
   standing: string | null
+}
+
+export interface Standing {
+  teamId: string
+  name: string
+  seed: number | null
+  conference: string
+  overall: string
+  gamesBehind: string
+  winPercent: number
+  streak: string
+  home: string
+  road: string
+}
+
+export interface ConferenceStandings {
+  id: string
+  name: string
+  short: string
+  season: number
+  teams: Standing[]
 }
 
 export interface RosterPlayer {
@@ -283,7 +310,29 @@ function parseGame(ev: J): Game {
     tv: tv.join(', '),
     timeValid: c.timeValid !== false,
     odds: parseOdds(c.odds?.[0], away, home),
+    period: int((c.status ?? ev?.status)?.period) ?? 0,
+    clock: typeof (c.status ?? ev?.status)?.clock === 'number' ? (c.status ?? ev?.status).clock : null,
   }
+}
+
+/** "12:34" or "41.2" → seconds. */
+function clockSeconds(s: unknown): number | null {
+  if (typeof s !== 'string') return null
+  const m = /^(?:(\d+):)?(\d+(?:\.\d+)?)$/.exec(s.trim())
+  return m ? Number(m[1] ?? 0) * 60 + Number(m[2]) : null
+}
+
+const periodLength = (period: number) => (period <= 2 ? 1200 : 300)
+
+/** Seconds played at `clock` seconds left in `period`. */
+export function elapsedAt(period: number, clock: number): number {
+  const before = period <= 1 ? 0 : period === 2 ? 1200 : 2400 + (period - 3) * 300
+  return before + Math.max(0, periodLength(period) - clock)
+}
+
+/** Seconds left in regulation, or in the current overtime. */
+export function secondsLeft(period: number, clock: number): number {
+  return period <= 1 ? 1200 + clock : clock
 }
 
 /* ---------- endpoints ---------- */
@@ -351,6 +400,11 @@ export async function summary(gameId: string): Promise<GameSummary> {
     awayScore: int(p.awayScore) ?? 0,
     homeScore: int(p.homeScore) ?? 0,
     teamId: str(p.team?.id),
+    elapsed: (() => {
+      const period = int(p.period?.number)
+      const clock = clockSeconds(p.clock?.displayValue)
+      return period && clock != null ? elapsedAt(period, clock) : null
+    })(),
   }))
 
   const venue = s.gameInfo?.venue ?? {}
@@ -382,7 +436,7 @@ export async function polls(): Promise<Poll[]> {
     })),
     others: (r.others ?? [])
       .filter((x: J) => (int(x.points) ?? 0) > 0)
-      .map((x: J) => ({ name: x.team?.nickname ?? x.team?.location ?? '', points: int(x.points) ?? 0 })),
+      .map((x: J) => ({ teamId: str(x.team?.id) ?? '', name: x.team?.nickname ?? x.team?.location ?? '', points: int(x.points) ?? 0 })),
   }))
 }
 
@@ -402,6 +456,40 @@ export async function schedule(team: string, season: number): Promise<TeamSchedu
     record: regular.team?.recordSummary || null,
     standing: regular.team?.standingSummary || null,
   }
+}
+
+/** Every conference's standings for a season, in ESPN's seed order. */
+export async function standings(season: number): Promise<ConferenceStandings[]> {
+  const j = await fetch(`https://site.api.espn.com/apis/v2/sports/basketball/mens-college-basketball/standings?season=${season}`, { cache: 'no-store' })
+  if (!j.ok) throw new Error(`ESPN ${j.status}`)
+  const data: J = await j.json()
+  return (data.children ?? []).map((c: J) => {
+    const teams: Standing[] = (c.standings?.entries ?? []).map((e: J) => {
+      const stats = new Map<string, J>((e.stats ?? []).map((x: J) => [x.type ?? x.name, x]))
+      const value = (type: string) => str(stats.get(type)?.displayValue) ?? ''
+      return {
+        teamId: str(e.team?.id) ?? '',
+        name: e.team?.shortDisplayName ?? e.team?.location ?? '',
+        seed: int(stats.get('playoffseed')?.value) || null,
+        conference: value('vsconf'),
+        overall: value('total'),
+        gamesBehind: value('vsconf_gamesbehind'),
+        winPercent: Number(stats.get('vsconf_winpercent')?.value ?? stats.get('leaguewinpercent')?.value) || 0,
+        streak: value('streak'),
+        home: value('home'),
+        road: value('road'),
+      }
+    })
+    // Seeds break ties the way the conference does; without them, conference win percentage decides.
+    teams.sort((a, b) => (a.seed ?? 99) - (b.seed ?? 99) || b.winPercent - a.winPercent || a.name.localeCompare(b.name))
+    return {
+      id: str(c.id) ?? '',
+      name: c.name ?? '',
+      short: c.shortName ?? c.abbreviation ?? '',
+      season: int(c.standings?.season) ?? season,
+      teams,
+    }
+  })
 }
 
 const jerseyOrder = (j: string) => (/^\d+$/.test(j) ? Number(j) : 999)

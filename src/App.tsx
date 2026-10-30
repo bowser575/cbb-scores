@@ -14,6 +14,7 @@ import { Empty } from './components/ui'
 import { GamePage } from './pages/Game'
 import { RankingsPage } from './pages/Rankings'
 import { ScoresPage } from './pages/Scores'
+import { StandingsPage } from './pages/Standings'
 import { TeamPage } from './pages/Team'
 import { SearchPage, TeamsPage } from './pages/Teams'
 
@@ -100,6 +101,7 @@ export const router = createHashRouter([
       { index: true, element: <Navigate to="/scores" replace /> },
       { path: 'scores', element: <ScoresPage /> },
       { path: 'rankings', element: <RankingsPage /> },
+      { path: 'standings', element: <StandingsPage /> },
       { path: 'teams', element: <TeamsPage /> },
       { path: 'search', element: <SearchPage /> },
       { path: ':tab/game/:id', element: <GamePage /> },
