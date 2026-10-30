@@ -13,8 +13,8 @@ import unicodedata
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
-# Identify ourselves; sites like Torvik's often block Python's default User-Agent.
-USER_AGENT = 'cbb-scores/1.0 (+https://github.com/bowser575/cbb-scores)'
+# Torvik's WAF allows "cbbscores.app" in the User-Agent for .json files (agreed with Bart Torvik).
+USER_AGENT = 'cbbscores.app/1.0 (+https://cbbscores.app)'
 
 
 def normalize(name):

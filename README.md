@@ -42,7 +42,7 @@ The Pages workflow refreshes and deploys three times daily, at 08:17, 11:17, and
 
 Data comes from `https://barttorvik.com/{season}_super_sked.json`, using the [column reference published by Bart Torvik](https://adamcwisports.blogspot.com/p/data.html). We fetch the bulk file once per deployment. Matchups use the Eastern game date and ESPN team IDs; `scripts/torvik-aliases.json` maps different school names explicitly. Unknown schools and missing predictions are omitted, never guessed. The cache contains one season, so dates outside it have no predictions. These are the feed's current projections, not a guaranteed archive of original pregame picks. Bart asks developers using the data to get in touch; credit and a source link appear on the scoreboard.
 
-Torvik currently returns 403 to GitHub's runners, so fresh predictions come from `scripts/update-torvik.sh` run on a home machine: it pulls `main`, refreshes the cache, and commits and pushes it (which redeploys). It refuses to run with local changes and pushes nothing if the fetch fails. Schedule it with cron, e.g. `20 3,6,16 * * * /path/to/cbb-scores/scripts/update-torvik.sh >> ~/torvik-update.log 2>&1` (times are the machine's local time; on macOS, cron may need Full Disk Access).
+Torvik's firewall blocks data-center IPs, including GitHub's runners, but allows requests whose User-Agent contains `cbbscores.app` (arranged with Bart Torvik), so keep that string in `USER_AGENT`. As a fallback, `scripts/update-torvik.sh` refreshes the cache from a home machine and pushes it (which redeploys); it refuses to run with local changes and pushes nothing if the fetch fails.
 
 Verify ingestion and matchup matching with `python scripts/test-torvik.py` and `node scripts/test-torvik.mjs`.
 
