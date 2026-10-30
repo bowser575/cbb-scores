@@ -137,10 +137,26 @@ export function useFavorites() {
   const [ids, setIds] = useStored<string[]>('favorites', [])
   const has = useCallback((id: string) => ids.includes(id), [ids])
   const toggle = useCallback(
-    (id: string) => setIds(ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]),
+    (id: string) => {
+      if (!ids.includes(id)) keepStorage()
+      setIds(ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id])
+    },
     [ids, setIds],
   )
   return { ids, has, toggle }
+}
+
+/**
+ * Asks the browser not to clear this site's storage when space runs low, so starred teams survive.
+ * Asked on a star rather than at startup because Firefox shows a permission prompt; Chrome decides silently.
+ * Safari's 7-day limit on sites that aren't on the home screen still applies.
+ */
+function keepStorage() {
+  navigator.storage?.persisted?.()
+    .then((persisted) => persisted || navigator.storage.persist())
+    .catch(() => {
+      // Unsupported or denied: favorites still save, just without the guarantee.
+    })
 }
 
 /* ---------- environment ---------- */
