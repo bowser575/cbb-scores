@@ -258,7 +258,8 @@ button.glass:active, a.glass:active { background: var(--highlight); }
 .navbar-inner {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  /* Side buttons never shrink; the title gives way (and ellipsizes) when space runs out. */
+  grid-template-columns: minmax(max-content, 1fr) minmax(0, auto) minmax(max-content, 1fr);
   align-items: center;
   gap: 8px;
   height: var(--bar-h);
@@ -1506,7 +1507,8 @@ button.glass:active, a.glass:active { background: var(--highlight); }
 
 .sheet-bar {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  /* Side buttons never shrink; the title gives way (and ellipsizes) when space runs out. */
+  grid-template-columns: minmax(max-content, 1fr) minmax(0, auto) minmax(max-content, 1fr);
   align-items: center;
   height: 60px;
   padding: 0 10px;
