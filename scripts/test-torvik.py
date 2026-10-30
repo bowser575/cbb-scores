@@ -40,5 +40,27 @@ class PredictionsTest(unittest.TestCase):
             torvik.convert([row(), row()], torvik.team_ids())
 
 
+def rating_row(name='Connecticut', barthag=.95):
+    value = [0] * 45
+    value[:9] = [4, name, 'BE', '0-0', 118.2, 7, 92.4, 3, barthag]
+    value[44] = 66.1
+    return value
+
+
+class RatingsTest(unittest.TestCase):
+    def test_ratings_map_to_espn_ids(self):
+        ratings = torvik.convert_ratings([rating_row()], torvik.team_ids())
+        self.assertEqual(ratings['41'], {'rank': 4, 'adjOE': 118.2, 'adjOERank': 7, 'adjDE': 92.4, 'adjDERank': 3,
+                                         'barthag': .95, 'tempo': 66.1})
+
+    def test_unknown_and_invalid_ratings_are_skipped(self):
+        rows = [rating_row('mass-Lowell'), rating_row(barthag=float('nan')), rating_row(barthag=2)]
+        self.assertEqual(torvik.convert_ratings(rows, torvik.team_ids()), {})
+
+    def test_short_rows_fail(self):
+        with self.assertRaises(ValueError):
+            torvik.convert_ratings([[1, 'Duke']], torvik.team_ids())
+
+
 if __name__ == '__main__':
     unittest.main()

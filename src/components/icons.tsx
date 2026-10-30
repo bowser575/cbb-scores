@@ -41,6 +41,14 @@ export const ListNumber = (p: P) => (
   </svg>
 )
 
+/** list.bullet.rectangle — a table of rows, for the Standings tab. */
+export const Table = (p: P) => (
+  <svg {...base(p)}>
+    <rect x="3" y="4" width="18" height="16" rx="3" />
+    <path d="M3 9.5h18M3 14.8h18M9 4v16" />
+  </svg>
+)
+
 export const Star = ({ filled, ...p }: P & { filled?: boolean }) => (
   <svg {...base(p)}>
     <path

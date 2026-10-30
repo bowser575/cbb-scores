@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react'
-import { CalendarDay, ListNumber, Star } from './icons'
+import { CalendarDay, ListNumber, Star, Table } from './icons'
 
-export type TabId = 'scores' | 'rankings' | 'teams' | 'search'
+export type TabId = 'scores' | 'rankings' | 'standings' | 'teams' | 'search'
 
 export const TABS: { id: TabId; label: string; icon: (active: boolean) => ReactNode }[] = [
   { id: 'scores', label: 'Scores', icon: () => <CalendarDay day={new Date().getDate()} /> },
   { id: 'rankings', label: 'Rankings', icon: () => <ListNumber /> },
+  { id: 'standings', label: 'Standings', icon: () => <Table /> },
   { id: 'teams', label: 'My Teams', icon: (on) => <Star filled={on} /> },
 ]
 
